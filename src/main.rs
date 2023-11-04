@@ -9,10 +9,10 @@ use std::env;
 fn decode_bencoded_value(encoded_value: &str) -> serde_json::Value {
 
     // If encoded_value starts with a i, and ends with an e and inside it's a number
-    if encoded_value.starts_with('i') && encoded_value.ends_with('e') {
+    if encoded_value.starts_with('i') {
         // Example: "i52e" -> "52"
-        // let colon_index = encoded_value.find(':').unwrap();
-        let number_string = &encoded_value[1..encoded_value.len() - 1];
+        let end_index = encoded_value.find('e').unwrap();
+        let number_string = &encoded_value[1..end_index];
         let number = number_string.parse::<i64>().unwrap();
         return serde_json::Value::Number(number.into());
     }
@@ -30,17 +30,17 @@ fn decode_bencoded_value(encoded_value: &str) -> serde_json::Value {
         // Example: "l5:helloi52ee" -> ["hello", 52]
         let mut list = Vec::new();
         // We need to remove the l and e from the encoded value
-        let inside_encoded_value = &encoded_value[1..encoded_value.len() - 1];
-        let mut current_index = 0;
-        while inside_encoded_value.len() > 0 && current_index < inside_encoded_value.len() - 1 {
-            let current_value = &inside_encoded_value[current_index..];
+        // let inside_encoded_value = &encoded_value[1..encoded_value.len() - 1];
+        let mut current_index = 1;
+        while encoded_value.len() > 0 && current_index < encoded_value.len() - 2 {
+            let current_value = &encoded_value[current_index..];
             // println!("current_value: {}", current_value);
             let decoded_value = decode_bencoded_value(current_value);
             // println!("decoded_value: {}", decoded_value.to_string());
             match decoded_value {
-                serde_json::Value::Number(_) => current_index += decoded_value.to_string().len() + 1,
+                serde_json::Value::Number(_) => current_index += decoded_value.to_string().len() + 2,
                 serde_json::Value::String(_) => current_index += decoded_value.to_string().len(),
-                // serde_json::Value::Array(_) => current_index += decoded_value.to_string().len() + 1,
+                serde_json::Value::Array(_) => current_index += decoded_value.to_string().len() + 1,
                 _ => panic!("Unhandled decoded value: {}", decoded_value)
             }
 
