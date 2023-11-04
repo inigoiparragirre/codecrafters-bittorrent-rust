@@ -31,9 +31,8 @@ fn decode_bencoded_value(encoded_value: &str) -> serde_json::Value {
         let mut list = Vec::new();
         // We need to remove the l and e from the encoded value
         let inside_encoded_value = &encoded_value[1..encoded_value.len() - 1];
-        // println!("inside_encoded_value: {}", inside_encoded_value);
         let mut current_index = 0;
-        while current_index < inside_encoded_value.len() - 1 {
+        while inside_encoded_value.len() > 0 && current_index < inside_encoded_value.len() - 1 {
             let current_value = &inside_encoded_value[current_index..];
             // println!("current_value: {}", current_value);
             let decoded_value = decode_bencoded_value(current_value);
