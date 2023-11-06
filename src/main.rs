@@ -26,13 +26,17 @@ fn decode_bencoded_value(encoded_value: &str, _index: usize) -> (serde_json::Val
         return (serde_json::Value::String(string.to_string()), string.len() + number_string.len() + 1);
     }
     // If encoded value is a list, it starts with an l, ends with an e, and contains encoded values
-    else if encoded_value.starts_with('l') && encoded_value.ends_with('e') {
+    else if encoded_value.starts_with('l') {
         // Example: "l5:helloi52ee" -> ["hello", 52]
+        // Example: "lli4eei5ee" -> [[4], 5]
         let mut list = Vec::new();
         // We need to remove the l and e from the encoded value
         // let inside_encoded_value = &encoded_value[1..encoded_value.len() - 1];
         let mut current_index = 1;
         while current_index < encoded_value.len() - 1 {
+            if encoded_value.chars().nth(current_index).unwrap() == 'e' {
+                break;
+            }
             let current_value = &encoded_value[current_index..encoded_value.len() - 1];
             // println!("current_value: {}", current_value);
             let (decoded_value, item_index) = decode_bencoded_value(current_value, current_index);
@@ -43,6 +47,9 @@ fn decode_bencoded_value(encoded_value: &str, _index: usize) -> (serde_json::Val
         }
         return (serde_json::Value::Array(list), current_index + 1);
     }
+        // else if encoded_value.starts_with('e') {
+        //
+        // }
     else {
         panic!("Unhandled encoded value: {}", encoded_value)
     }
