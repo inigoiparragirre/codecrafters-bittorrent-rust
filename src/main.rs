@@ -1,6 +1,4 @@
-use std::env;
-use std::fs::File;
-use std::io::Read;
+use std::{env, fs};
 use std::error::Error;
 
 mod decode;
@@ -28,16 +26,14 @@ fn main() -> Result<(), Box<dyn Error>> {
         // This is necessary to print for the tests
         println!("{}", decoded_value.to_string());
     } else if command == "info" {
-        println!("info: {}", args[2]);
-        // Attempt to open the file
-        let mut file = File::open(&args[2])?;
 
-        // Read the contents of the file
-        let mut content = String::new();
-        file.read_to_string(&mut content)?;
+        // Get valid string characters
+        let encoded_torrent_content: String = String::from_utf8_lossy(&fs::read(&args[2])?).parse()?;
+        let (decoded_value, _) = crate::decode::decode_bencoded_value(&encoded_torrent_content, 0);
 
-        // Print the contents of the file
-        println!("File contents:\n{}", content);
+        println!("{}", decoded_value.to_string());
+
+
 
 
     }
