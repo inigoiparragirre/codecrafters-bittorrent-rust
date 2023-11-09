@@ -38,12 +38,9 @@ fn decode_bencoded_value(encoded_value: &str, _index: usize) -> (serde_json::Val
                 break;
             }
             let current_value = &encoded_value[current_index..encoded_value.len() - 1];
-            // println!("current_value: {}", current_value);
             let (decoded_value, item_index) = decode_bencoded_value(current_value, current_index);
-            // println!("decoded_value: {}", decoded_value.to_string());
             current_index += item_index;
             list.push(decoded_value);
-
         }
         return (serde_json::Value::Array(list), current_index + 1);
     } else if encoded_value.starts_with('d') && encoded_value.ends_with('e') {
@@ -54,29 +51,21 @@ fn decode_bencoded_value(encoded_value: &str, _index: usize) -> (serde_json::Val
         let mut current_index = 1;
         while current_index < encoded_value.len() - 1 {
             let current_value = &encoded_value[current_index..encoded_value.len() - 1];
-            // println!("current_value: {}", current_value);
             let (decoded_key, key_index) = decode_bencoded_value(current_value, current_index);
             // Use from_value to get key string without quotes
             let key = serde_json::from_value(decoded_key).unwrap();
-            // println!("decoded_key: {}", key);
             current_index += key_index;
             if encoded_value.chars().nth(current_index).unwrap() == 'e' {
                 break;
             }
             let current_value = &encoded_value[current_index..encoded_value.len() - 1];
-            // println!("current_value: {}", current_value);
             let (decoded_value, value_index) = decode_bencoded_value(current_value, current_index);
-            // println!("decoded_value: {}", decoded_value.to_string());
             current_index += value_index;
             map.insert(key, decoded_value);
             // println!("map: {:?}", map);
         }
         return (serde_json::Value::Object(map), current_index + 1);
-    }
-        // else if encoded_value.starts_with('e') {
-        //
-        // }
-    else {
+    } else {
         panic!("Unhandled encoded value: {}", encoded_value)
     }
 }
