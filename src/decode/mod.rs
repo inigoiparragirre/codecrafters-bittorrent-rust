@@ -48,6 +48,7 @@
                 let (decoded_key, key_index) = decode_bencoded_value(current_value, current_index);
                 // Use from_value to get key string without quotes
                 let key = serde_json::from_value(decoded_key).unwrap();
+                // println!("Key: {}", key);
                 current_index += key_index;
                 if encoded_value.chars().nth(current_index).unwrap() == 'e' {
                     break;

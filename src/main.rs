@@ -1,5 +1,7 @@
 use std::{env, fs};
 use std::error::Error;
+use std::ops::Add;
+use serde_json::Value;
 
 mod decode;
 
@@ -29,11 +31,19 @@ fn main() -> Result<(), Box<dyn Error>> {
 
         // Get valid string characters
         let encoded_torrent_content: String = String::from_utf8_lossy(&fs::read(&args[2])?).parse()?;
-        let (decoded_value, _) = crate::decode::decode_bencoded_value(&encoded_torrent_content, 0);
+        // Remove pieces
+        let clean_encoded_content = encoded_torrent_content.split("6:pieces").collect::<Vec<&str>>()[0];
+        let clean_string = String::from(clean_encoded_content);
+        let content = clean_string.add("ee");
 
-        println!("{}", decoded_value.to_string());
+        let (decoded_value, _) = crate::decode::decode_bencoded_value(&content, 0);
+        let url = decoded_value.get("announce").unwrap().clone();
+        let key_url: String = serde_json::from_value(url).unwrap();
 
-
+        let length = decoded_value.get("info").unwrap().get("length").unwrap().clone();
+        let key_length: Value = serde_json::from_value(length).unwrap();
+        println!("Tracker URL: {}", key_url);
+        println!("Length: {}", key_length);
 
 
     }
