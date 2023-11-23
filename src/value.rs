@@ -7,7 +7,7 @@ use serde_bytes::ByteBuf;
 /// encoded in bencode.
 
 
-enum BencodeValue {
+pub enum BencodeValue {
 
     /// An array of bytes
     BString(Vec<u8>),

@@ -1,3 +1,10 @@
+use std::collections::HashMap;
+use crate::value::BencodeValue;
+use crate::error::{Result, Error};
+use std::result::Result as stdResult;
+
+
+
 #[derive(Debug, PartialEq)]
 pub enum ParseDecode {
     Integer(i64),
@@ -7,19 +14,34 @@ pub enum ParseDecode {
     End,
 }
 
-pub fn parse() -> ParseDecode {
-    ParseDecode::End
+pub fn parse_number() -> Result<ParseDecode> {
+    Ok(ParseDecode::Integer(0))
+}
+
+pub fn parse(encoded_bytes: &[u8]) -> Result<ParseDecode> {
+    // If encoded_value starts with a i, and ends with an e and inside it's a number
+    if encoded_bytes[0] == b'i' {
+        // Example: "i52e" -> "52"
+        // collect digits until we find an e
+        let number_string = encoded_bytes.to_vec()[1..].iter().take_while(|c| **c != b'e').map(|c| *c as char).collect::<String>();
+        let number = number_string.parse::<i64>().unwrap();
+        Ok((serde_json::Value::Number(number.into()), number_string.len() + 2))
+    }
+
+
+
+    Ok(ParseDecode::End)
 
 }
 
 #[allow(dead_code)]
-pub fn decode_bencoded_value(encoded_value: &[u8], _index: usize) -> Result<(serde_json::Value, usize), Box<dyn std::error::Error>> {
+pub fn decode_bencoded_value(encoded_value: &[u8], _index: usize) -> stdResult<(serde_json::Value, usize), Box<dyn std::error::Error>> {
 
     // If encoded_value starts with a i, and ends with an e and inside it's a number
-    if encoded_value.starts_with(b"i") {
+    if encoded_value[0] == b'i' {
         // Example: "i52e" -> "52"
         // collect digits until we find an e
-        let number_string = encoded_value.to_vec().iter().take_while(|c| **c != b'e').map(|c| *c as char).collect::<String>().strip_prefix("i").unwrap();
+        let number_string = encoded_value.to_vec()[1..].iter().take_while(|c| **c != b'e').map(|c| *c as char).collect::<String>();
         let number = number_string.parse::<i64>().unwrap();
         Ok((serde_json::Value::Number(number.into()), number_string.len() + 2))
     }
