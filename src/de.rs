@@ -8,8 +8,8 @@ struct BAccess<'a, 'de> {
     len: Option<usize>,
 }
 
-impl<'de, 'a: 'de> BAccess<'a, 'de> {
-    fn new(de: &'a mut BDeserializer<'a>, len: Option<usize>) -> Self {
+impl<'de: 'a, 'a> BAccess<'a, 'de> {
+    fn new(de: &'a mut BDeserializer<'de>, len: Option<usize>) -> Self {
         BAccess {de, len}
     }
 }
