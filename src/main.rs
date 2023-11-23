@@ -1,9 +1,12 @@
 use std::{env};
 use serde_json::Value;
 
-mod decode;
-mod parse;
-mod value;
+// pub mod decode;
+// pub mod de;
+// pub mod value;
+// pub mod torrent;
+// // pub mod error;
+
 
 use clap::Parser;
 

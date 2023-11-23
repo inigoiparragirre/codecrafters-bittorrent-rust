@@ -1,6 +1,14 @@
+#[derive(Debug, PartialEq)]
+pub enum ParseDecode {
+    Integer(i64),
+    Bytes(Vec<u8>),
+    List,
+    Dictionary,
+    End,
+}
 
-
-pub fn parse() {
+pub fn parse() -> ParseDecode {
+    ParseDecode::End
 
 }
 
