@@ -1,11 +1,19 @@
-use std::{env, fs};
+extern crate core;
+
+use std::result::Result as stdResult;
 use std::error::Error;
-use std::ops::Add;
-use serde_json::Value;
+use std::{env};
+
 
 mod decode;
+// pub mod de;
+mod value;
+mod torrent;
+mod error;
+
 
 use clap::Parser;
+use crate::value::BencodeValue;
 
 #[derive(Parser, Debug)]
 struct Arguments {
@@ -15,38 +23,56 @@ struct Arguments {
 
 
 // Usage: your_bittorrent.sh decode "<encoded_value>"
-fn main() -> Result<(), Box<dyn Error>> {
+fn main() -> stdResult<(), Box<dyn Error>> {
     let args: Vec<String> = env::args().collect();
-    let command = &args[1];
+    let command = &args[1].as_str();
+    let encoded_bytes = &args[2].as_bytes();
+    let mut parser = decode::Parser::new(&encoded_bytes);
 
-    if command == "decode" {
-        let encoded_value = &args[2];
-        let (decoded_value, _) = decode::decode_bencoded_value(encoded_value, 0);
-        // This is necessary to print for the tests
-        println!("{}", decoded_value.to_string());
-    } else if command == "info" {
+    match *command {
+        "decode" => {
+            match parser.parse() {
+                Ok(decoded_value) => {
+                    println!("{}", decoded_value);
+                    Ok(())
+                }
+                Err(err) => {
+                    println!("Error decoding: {}", err);
+                    Err(err.into())
+                }
+            }
+        }
+        "info" => {
+            // Get valid string characters
+            // let content: &[u8] = &fs::read(&args[2])?;
+            match parser.parse() {
+                Ok(decoded_value) => {
+                    if let BencodeValue::BDictionary(map) = decoded_value {
+                        if let Some(url) = map.get("announce".as_bytes()) {
+                            println!("Tracker URL: {}", url);
+                        }
 
-        // Get valid string characters
-        let encoded_torrent_content: String = String::from_utf8_lossy(&fs::read(&args[2])?).parse()?;
-        // Remove pieces
-        let clean_encoded_content = encoded_torrent_content.split("6:pieces").collect::<Vec<&str>>()[0];
-        let clean_string = String::from(clean_encoded_content);
-        let content = clean_string.add("ee");
+                        if let Some(info) = map.get("info".as_bytes()) {
+                            if let BencodeValue::BDictionary(map) = info {
+                                if let Some(length) = map.get("length".as_bytes()) {
+                                    println!("Length: {}", length);
+                                }
 
-        let (decoded_value, _) = decode::decode_bencoded_value(&content, 0);
-        let url = decoded_value.get("announce").unwrap().clone();
-        let key_url: String = serde_json::from_value(url).unwrap();
+                            }
+                        }
 
-        let length = decoded_value.get("info").unwrap().get("length").unwrap().clone();
-        let key_length: Value = serde_json::from_value(length).unwrap();
-        println!("Tracker URL: {}", key_url);
-        println!("Length: {}", key_length);
-
-
+                    }
+                    Ok(())
+                }
+                Err(err) => {
+                    println!("Error decoding info: {}", err);
+                    Err(err.into())
+                }
+            }
+        }
+        _ => {
+            println!("unknown command: {}", args[1]);
+            Err(Box::new(std::io::Error::new(std::io::ErrorKind::Other, "unknown command")))
+        }
     }
-
-    else {
-        println!("unknown command: {}", args[1])
-    }
-    Ok(())
 }
