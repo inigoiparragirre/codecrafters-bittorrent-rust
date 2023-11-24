@@ -23,7 +23,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         // You can use print statements as follows for debugging, they'll be visible when running tests.
         println!("Logs from your program will appear here!");
         let encoded_value = &args[2];
-        let (decoded_value, _) = crate::decode::decode_bencoded_value(encoded_value, 0);
+        let (decoded_value, _) = decode::decode_bencoded_value(encoded_value, 0);
         // This is necessary to print for the tests
         println!("{}", decoded_value.to_string());
     } else if command == "info" {
@@ -35,7 +35,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         let clean_string = String::from(clean_encoded_content);
         let content = clean_string.add("ee");
 
-        let (decoded_value, _) = crate::decode::decode_bencoded_value(&content, 0);
+        let (decoded_value, _) = decode::decode_bencoded_value(&content, 0);
         let url = decoded_value.get("announce").unwrap().clone();
         let key_url: String = serde_json::from_value(url).unwrap();
 
