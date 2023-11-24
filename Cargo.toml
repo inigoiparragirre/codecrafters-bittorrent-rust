@@ -38,8 +38,4 @@ log = "0.4.20"                # async http requests
 serde_derive = "1.0.193"
 
 
-[lib]
-name = "bittorrent_starter_rust"
-path = "src/lib.rs"
-
 

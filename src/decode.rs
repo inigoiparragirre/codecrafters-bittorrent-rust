@@ -51,8 +51,9 @@ impl<'a> Parser<'a> {
         Ok(bytes)
     }
 
-    pub fn parse_string_len(&mut self) -> Result<i64> {
+    pub fn parse_string_len(&mut self, first: u8) -> Result<i64> {
         let mut num_bytes: Vec<u8> = Vec::new();
+        num_bytes.push(first);
         loop {
             let mut buf: [u8; 1] = [0; 1];
             self.input.read(&mut buf).map_err(|_| Error::Message("Error reading number".to_string()))?;
@@ -78,10 +79,10 @@ impl<'a> Parser<'a> {
                 let number = self.parse_number()?;
                 Ok(BencodeValue::BInteger(number))
             }
-            b'0'..=b'9' => {
+            first @ b'0'..=b'9' => {
                 // Example: "5:hello" -> "hello"
                 // Find the index of the colon
-                let string_len = self.parse_string_len()?;
+                let string_len = self.parse_string_len(first)?;
                 let string = self.parse_bytes(string_len)?;
                 Ok(BencodeValue::BString(string))
             }

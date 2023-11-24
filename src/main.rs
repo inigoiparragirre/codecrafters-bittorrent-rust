@@ -33,7 +33,7 @@ fn main() -> stdResult<(), Box<dyn Error>> {
         "decode" => {
             match parser.parse() {
                 Ok(decoded_value) => {
-                    println!("Decode: {}", decoded_value);
+                    println!("{}", decoded_value);
                     Ok(())
                 }
                 Err(err) => {
