@@ -21,8 +21,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     if command == "decode" {
         // You can use print statements as follows for debugging, they'll be visible when running tests.
-        // println!("Logs from your program will appear here!");
-        // Uncomment this block to pass the first stage
+        println!("Logs from your program will appear here!");
         let encoded_value = &args[2];
         let (decoded_value, _) = crate::decode::decode_bencoded_value(encoded_value, 0);
         // This is necessary to print for the tests
