@@ -6,7 +6,7 @@ use serde_bytes::ByteBuf;
 /// BencodeValue is an enum that represents all possible values that can be
 /// encoded in bencode.
 
-
+#[derive(Debug, PartialEq)]
 pub enum BencodeValue {
 
     /// An array of bytes

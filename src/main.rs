@@ -1,13 +1,16 @@
+extern crate core;
+
 use std::{env};
 use serde_json::Value;
 
-// pub mod decode;
+
+mod decode;
 // pub mod de;
-// pub mod value;
-// pub mod torrent;
-// // pub mod error;
+mod value;
+mod torrent;
+mod error;
 
-
+use error::Result;
 use clap::Parser;
 
 #[derive(Parser, Debug)]
@@ -18,14 +21,16 @@ struct Arguments {
 
 
 // Usage: your_bittorrent.sh decode "<encoded_value>"
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+fn main() -> Result<()> {
     let args: Vec<String> = env::args().collect();
     let command = &args[1].as_str();
     let encoded_bytes = &args[2].as_bytes();
 
+    let parser = decode::Parser::new(&buffer);
+
     match *command {
         "decode" => {
-            match decode::decode_bencoded_value(*encoded_bytes, 0) {
+            match parser.parse(*encoded_bytes) {
                 Ok((decoded_value, _)) => {
                     println!("{}", decoded_value.to_string());
                     Ok(())

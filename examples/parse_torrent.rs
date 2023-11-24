@@ -17,6 +17,7 @@ fn main() {
     // Read torrent from file
     let mut handle = std::fs::File::open("example.torrent").unwrap();
 
+
     match handle.read_to_end(&mut buffer) {
         Ok(_) => match from_bytes::<Torrent>(&buffer) {
             Ok(t) => render_torrent(&t),

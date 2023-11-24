@@ -2,8 +2,7 @@ use std::collections::HashMap;
 use crate::value::BencodeValue;
 use crate::error::{Result, Error};
 use std::result::Result as stdResult;
-
-
+use std::io::Read;
 
 #[derive(Debug, PartialEq)]
 pub enum ParseDecode {
@@ -14,24 +13,107 @@ pub enum ParseDecode {
     End,
 }
 
-pub fn parse_number() -> Result<ParseDecode> {
-    Ok(ParseDecode::Integer(0))
+pub struct Parser<'a> {
+    input: &'a [u8],
+    index: usize,
 }
 
-pub fn parse(encoded_bytes: &[u8]) -> Result<ParseDecode> {
-    // If encoded_value starts with a i, and ends with an e and inside it's a number
-    if encoded_bytes[0] == b'i' {
-        // Example: "i52e" -> "52"
-        // collect digits until we find an e
-        let number_string = encoded_bytes.to_vec()[1..].iter().take_while(|c| **c != b'e').map(|c| *c as char).collect::<String>();
-        let number = number_string.parse::<i64>().unwrap();
-        Ok((serde_json::Value::Number(number.into()), number_string.len() + 2))
+impl<'a> Parser<'a> {
+    pub fn new(input: &'a [u8]) -> Self {
+        Parser {
+            input,
+            index: 0,
+        }
     }
 
+    pub fn parse_number(&mut self) -> Result<i64> {
+        let mut num_bytes: Vec<u8> = Vec::new();
+        loop {
+            let mut buf: [u8; 1] = [0; 1];
+            self.input.read(&mut buf).map_err(|_| Error::Message("Error reading number".to_string()))?;
+            if buf[0] == b'e' {
+                break;
+            }
+            num_bytes.push(buf[0]);
+        }
+        let num_string = String::from_utf8(num_bytes).map_err(|_| Error::Message("Error converting number to string from_utf8".to_string()))?;
+        let number = num_string.parse::<i64>().map_err(|_| Error::Message("Error parsing number".to_string()))?;
+        Ok(number)
+    }
 
+    pub fn parse_bytes(&mut self, len: i64) -> Result<Vec<u8>> {
+        let mut bytes: Vec<u8> = Vec::new();
+        for _ in 0..len {
+            let mut buf: [u8; 1] = [0; 1];
+            self.input.read(&mut buf).map_err(|_| Error::Message("Error reading number".to_string()))?;
+            bytes.push(buf[0]);
+        }
+        Ok(bytes)
+    }
 
-    Ok(ParseDecode::End)
+    pub fn parse_string_len(&mut self) -> Result<i64> {
+        let mut num_bytes: Vec<u8> = Vec::new();
+        loop {
+            let mut buf: [u8; 1] = [0; 1];
+            self.input.read(&mut buf).map_err(|_| Error::Message("Error reading number".to_string()))?;
+            if buf[0] == b':' {
+                break;
+            }
+            num_bytes.push(buf[0]);
+        }
+        let num_string = String::from_utf8(num_bytes).map_err(|_| Error::Message("Error converting number to string from_utf8".to_string()))?;
+        let number = num_string.parse::<i64>().map_err(|_| Error::Message("Error parsing number".to_string()))?;
+        Ok(number)
 
+    }
+
+    pub fn parse(&mut self) -> Result<BencodeValue> {
+
+        // Read byte character
+        let mut buf: [u8; 1] = [0; 1];
+        self.input.read(&mut buf).map_err(|_| Error::Message("Error reading input".to_string()))?;
+        return match buf[0] {
+            b'i' => {
+                // Example: "i52e" -> "52"
+                let number = self.parse_number()?;
+                Ok(BencodeValue::BInteger(number))
+            }
+            b'0'..=b'9' => {
+                // Example: "5:hello" -> "hello"
+                // Find the index of the colon
+                let string_len = self.parse_string_len()?;
+                let string = self.parse_bytes(string_len)?;
+                Ok(BencodeValue::BString(string))
+            }
+            b'l' => {
+                // Example: "l5:helloi52ee" -> ["hello", 52]
+                let mut list = Vec::new();
+                let decoded_value = self.parse()?;
+                list.push(decoded_value);
+
+                Ok(BencodeValue::BList(list))
+            }
+            b'd' => {
+                // Example: "d5:helloi52ee" -> {"hello": 52}
+                let mut map = HashMap::new();
+                let key = self.parse()?;
+                match key {
+                    BencodeValue::BString(key_string) => {
+                        let value = self.parse()?;
+                        map.insert(String::from_utf8(key_string).map_err(|_| Error::Message("Error utf8 for map key input".to_string()))?, value);
+                    }
+                    _ => {
+                        return Err(Error::Message(format!("Invalid key type: {:?}", key)));
+                    }
+                }
+
+                Ok(BencodeValue::BDictionary(map))
+            }
+            _ => {
+                Err(Error::Message(format!("Invalid character `{}`", buf[0])))
+            }
+        }
+    }
 }
 
 #[allow(dead_code)]
