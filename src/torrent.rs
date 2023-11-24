@@ -1,9 +1,6 @@
 use serde::Deserialize;
 use serde_bytes::ByteBuf;
 
-
-
-
 #[derive(Debug, Deserialize)]
 pub struct Torrent {
     info: Info,

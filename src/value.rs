@@ -22,6 +22,29 @@ pub enum BencodeValue {
     BDictionary(HashMap<Vec<u8>, BencodeValue>),
 }
 
+impl From<String> for BencodeValue {
+    fn from(s: String) -> BencodeValue {
+        BencodeValue::BString(s.into_bytes())
+    }
+}
+
+impl From<HashMap<Vec<u8>, BencodeValue>> for BencodeValue {
+    fn from(v: HashMap<Vec<u8>, BencodeValue>) -> BencodeValue {
+        BencodeValue::BDictionary(v)
+    }
+}
+
+impl fmt::Display for BencodeValue {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            BencodeValue::BString(msg) => write!(f, "{}", String::from_utf8(msg.clone()).unwrap()),
+            BencodeValue::BInteger(code) => write!(f, "{}", code),
+            // Handle other variants if needed
+            _ => write!(f, "Not implemented"),
+        }
+    }
+}
+
 struct BencodeValueVisitor;
 
 impl<'de> de::Visitor<'de> for BencodeValueVisitor {

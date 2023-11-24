@@ -96,11 +96,11 @@ impl<'a> Parser<'a> {
             b'd' => {
                 // Example: "d5:helloi52ee" -> {"hello": 52}
                 let mut map = HashMap::new();
-                let key = self.parse()?;
+                let key = self.parse().map_err(|_| Error::Message("Error mapping key input".to_string()))?;
                 match key {
                     BencodeValue::BString(key_string) => {
                         let value = self.parse()?;
-                        map.insert(String::from_utf8(key_string).map_err(|_| Error::Message("Error utf8 for map key input".to_string()))?, value);
+                        map.insert(key_string, value);
                     }
                     _ => {
                         return Err(Error::Message(format!("Invalid key type: {:?}", key)));
@@ -177,7 +177,7 @@ pub fn decode_bencoded_value(encoded_value: &[u8], _index: usize) -> stdResult<(
             match decode_bencoded_value(current_value, current_index) {
                 Ok((decoded_value, value_index)) => {
                     // Use from_value to get key string without quotes
-                    let key = serde_json::from_value(decoded_value.clone()).unwrap();
+                    let key = serde_json::from_value(decoded_value.clone())?;
                     // println!("Key: {}", key);
                     current_index += value_index;
                     if encoded_value[current_index] == b'e' {
