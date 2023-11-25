@@ -162,9 +162,6 @@ pub fn decode_bencoded_value(encoded_value: &[u8], _index: usize) -> stdResult<(
                     break;
                 }
             }
-            // let Ok((decoded_value, item_index)) = decode_bencoded_value(current_value, current_index);
-            // current_index += item_index;
-            // list.push(decoded_value);
         }
         Ok((serde_json::Value::Array(list), current_index + 1))
     } else if encoded_value.starts_with(b"d") {
@@ -193,10 +190,6 @@ pub fn decode_bencoded_value(encoded_value: &[u8], _index: usize) -> stdResult<(
                 }
             }
 
-
-            // let Ok((decoded_value, value_index)) = decode_bencoded_value(current_value, current_index);
-            // current_index += value_index;
-            // map.insert(key, decoded_value);
         }
         Ok((serde_json::Value::Object(map), current_index + 1))
     } else {
