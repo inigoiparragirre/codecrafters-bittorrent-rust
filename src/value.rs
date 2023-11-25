@@ -18,6 +18,9 @@ pub enum BencodeValue {
 
     /// Dictionary of bencode values
     BDictionary(HashMap<Vec<u8>, BencodeValue>),
+
+    /// End value: only for detecting the close of encoding
+    BEnd,
 }
 
 impl From<String> for BencodeValue {
@@ -38,6 +41,15 @@ impl fmt::Display for BencodeValue {
             // We output the string as a quoted string
             BencodeValue::BString(msg) => write!(f, r#""{}""#, String::from_utf8(msg.clone()).unwrap()),
             BencodeValue::BInteger(code) => write!(f, "{}", code),
+            BencodeValue::BList(list) => {
+                let mut output = String::new();
+                // Add a comma after the item, except for the last one
+                for item in list {
+                    output.push_str(&format!("{},", item));
+                }
+                let output_str = output.trim_end_matches(","); // Remove the last comma
+                write!(f, r#"[{}]"#, output_str)
+            }
             // Handle other variants if needed
             _ => write!(f, "Not implemented"),
         }

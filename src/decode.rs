@@ -68,6 +68,22 @@ impl<'a> Parser<'a> {
 
     }
 
+    pub fn parse_list(&mut self) -> Result<BencodeValue> {
+        let mut list = Vec::new();
+        loop {
+            let decoded_value = self.parse()?;
+            match decoded_value {
+                BencodeValue::BEnd => {
+                    break;
+                }
+                _ => {
+                    list.push(decoded_value);
+                }
+            }
+        }
+        Ok(BencodeValue::BList(list))
+    }
+
     pub fn parse(&mut self) -> Result<BencodeValue> {
 
         // Read byte character
@@ -88,11 +104,9 @@ impl<'a> Parser<'a> {
             }
             b'l' => {
                 // Example: "l5:helloi52ee" -> ["hello", 52]
-                let mut list = Vec::new();
-                let decoded_value = self.parse()?;
-                list.push(decoded_value);
+                let decoded_list = self.parse_list()?;
 
-                Ok(BencodeValue::BList(list))
+                Ok(decoded_list)
             }
             b'd' => {
                 // Example: "d5:helloi52ee" -> {"hello": 52}
@@ -109,6 +123,9 @@ impl<'a> Parser<'a> {
                 }
 
                 Ok(BencodeValue::BDictionary(map))
+            }
+            b'e' => {
+                Ok(BencodeValue::BEnd)
             }
             _ => {
                 Err(Error::Message(format!("Invalid character `{}`", buf[0])))
