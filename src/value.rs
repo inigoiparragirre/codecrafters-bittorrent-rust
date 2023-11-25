@@ -50,6 +50,15 @@ impl fmt::Display for BencodeValue {
                 let output_str = output.trim_end_matches(","); // Remove the last comma
                 write!(f, r#"[{}]"#, output_str)
             }
+            BencodeValue::BDictionary(map) => {
+                let mut output = String::new();
+                // Add a comma after the item, except for the last one
+                for (key, value) in map {
+                    output.push_str(&format!(r#""{}":{},"#, String::from_utf8(key.clone()).unwrap(), value));
+                }
+                let output_str = output.trim_end_matches(","); // Remove the last comma
+                write!(f, r#"{{{}}}"#, output_str)
+            }
             // Handle other variants if needed
             _ => write!(f, "Not implemented"),
         }
