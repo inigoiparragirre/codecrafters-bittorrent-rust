@@ -1,7 +1,7 @@
-use std::collections::HashMap;
 use crate::value::BencodeValue;
 use crate::error::{Result, Error};
 use std::io::Read;
+use linked_hash_map::LinkedHashMap;
 
 // #[derive(Debug, PartialEq)]
 // pub enum ParseDecode {
@@ -64,7 +64,6 @@ impl<'a> Parser<'a> {
         let num_string = String::from_utf8(num_bytes).map_err(|_| Error::Message("Error converting number to string from_utf8".to_string()))?;
         let number = num_string.parse::<i64>().map_err(|_| Error::Message("Error parsing number".to_string()))?;
         Ok(number)
-
     }
 
     pub fn parse_list(&mut self) -> Result<BencodeValue> {
@@ -84,7 +83,7 @@ impl<'a> Parser<'a> {
     }
 
     pub fn parse_dictionary(&mut self) -> Result<BencodeValue> {
-        let mut map = HashMap::new();
+        let mut map = LinkedHashMap::new();
         loop {
             let key = self.parse().map_err(|_| Error::Message("Error mapping key input".to_string()))?;
             match key {
@@ -137,7 +136,7 @@ impl<'a> Parser<'a> {
             _ => {
                 Err(Error::Message(format!("Invalid character `{}`", buf[0])))
             }
-        }
+        };
     }
 }
 

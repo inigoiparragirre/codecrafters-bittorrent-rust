@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use linked_hash_map::LinkedHashMap;
 use std::fmt;
 
 
@@ -17,7 +17,7 @@ pub enum BencodeValue {
     BList(Vec<BencodeValue>),
 
     /// Dictionary of bencode values
-    BDictionary(HashMap<Vec<u8>, BencodeValue>),
+    BDictionary(LinkedHashMap<Vec<u8>, BencodeValue>),
 
     /// End value: only for detecting the close of encoding
     BEnd,
@@ -29,8 +29,8 @@ impl From<String> for BencodeValue {
     }
 }
 
-impl From<HashMap<Vec<u8>, BencodeValue>> for BencodeValue {
-    fn from(v: HashMap<Vec<u8>, BencodeValue>) -> BencodeValue {
+impl From<LinkedHashMap<Vec<u8>, BencodeValue>> for BencodeValue {
+    fn from(v: LinkedHashMap<Vec<u8>, BencodeValue>) -> BencodeValue {
         BencodeValue::BDictionary(v)
     }
 }
