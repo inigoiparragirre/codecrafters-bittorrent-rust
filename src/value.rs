@@ -5,10 +5,8 @@ use serde_bytes::ByteBuf;
 
 /// BencodeValue is an enum that represents all possible values that can be
 /// encoded in bencode.
-
 #[derive(Debug, PartialEq)]
 pub enum BencodeValue {
-
     /// An array of bytes
     BString(Vec<u8>),
 
@@ -48,7 +46,6 @@ impl fmt::Display for BencodeValue {
 struct BencodeValueVisitor;
 
 impl<'de> de::Visitor<'de> for BencodeValueVisitor {
-
     type Value = BencodeValue;
     fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         formatter.write_str("any valid BEncode value")
@@ -75,14 +72,10 @@ impl<'de> de::Visitor<'de> for BencodeValueVisitor {
         }
         Ok(BencodeValue::BDictionary(map))
     }
-
-
 }
 
 
 impl<'de> de::Deserialize<'de> for BencodeValue {
-
-
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
         where
             D: Deserializer<'de>,

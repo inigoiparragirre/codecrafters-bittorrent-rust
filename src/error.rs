@@ -1,35 +1,23 @@
 use std;
-use std::fmt::{self, Display, Formatter};
+use std::fmt::{self, Display};
 
 use serde::{de, ser};
 
 pub type Result<T> = std::result::Result<T, Error>;
 
-
+#[allow(dead_code)]
 #[derive(Debug)]
 pub enum Error {
-
     Message(String),
-
     // Zero or more variants that can be created directly by the Serializer and
     // Deserializer without going through `ser::Error` and `de::Error`. These
     // are specific to the format, in this case JSON.
     Eof,
     Syntax,
-    InvalidType,
+    // InvalidType,
     // ExpectedBoolean,
     // ExpectedInteger,
     // ExpectedString,
-    // ExpectedNull,
-    // ExpectedArray,
-    // ExpectedArrayComma,
-    // ExpectedArrayEnd,
-    // ExpectedMap,
-    // ExpectedMapColon,
-    // ExpectedMapComma,
-    // ExpectedMapEnd,
-    // ExpectedEnum,
-    // TrailingCharacters,
 }
 
 impl ser::Error for Error {

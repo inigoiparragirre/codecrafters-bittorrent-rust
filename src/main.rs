@@ -1,26 +1,21 @@
-extern crate core;
-
 use std::result::Result as stdResult;
 use std::error::Error;
 use std::{env};
+use clap::Parser;
+use crate::value::BencodeValue;
 
 
 mod decode;
-// pub mod de;
 mod value;
 mod torrent;
 mod error;
 
-
-use clap::Parser;
-use crate::value::BencodeValue;
 
 #[derive(Parser, Debug)]
 struct Arguments {
     info: String,
     file_name: String,
 }
-
 
 // Usage: your_bittorrent.sh decode "<encoded_value>"
 fn main() -> stdResult<(), Box<dyn Error>> {
@@ -57,10 +52,8 @@ fn main() -> stdResult<(), Box<dyn Error>> {
                                 if let Some(length) = map.get("length".as_bytes()) {
                                     println!("Length: {}", length);
                                 }
-
                             }
                         }
-
                     }
                     Ok(())
                 }
