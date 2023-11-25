@@ -22,10 +22,11 @@ fn main() -> stdResult<(), Box<dyn Error>> {
     let args: Vec<String> = env::args().collect();
     let command = &args[1].as_str();
     let encoded_bytes = &args[2].as_bytes();
-    let mut parser = decode::Parser::new(&encoded_bytes);
+
 
     match *command {
         "decode" => {
+            let mut parser = decode::Parser::new(&encoded_bytes);
             match parser.parse() {
                 Ok(decoded_value) => {
                     println!("{}", decoded_value);
@@ -38,13 +39,16 @@ fn main() -> stdResult<(), Box<dyn Error>> {
             }
         }
         "info" => {
-            // Get valid string characters
-            // let content: &[u8] = &fs::read(&args[2])?;
+            // Read the file
+            let content: &[u8] = &std::fs::read(&args[2])?;
+            let mut parser = decode::Parser::new(&content);
             match parser.parse() {
                 Ok(decoded_value) => {
                     if let BencodeValue::BDictionary(map) = decoded_value {
                         if let Some(url) = map.get("announce".as_bytes()) {
-                            println!("Tracker URL: {}", url);
+                            let url_string = format!("{}", url);
+                            let output = url_string.trim_matches('"'); // Remove quotes
+                            println!("Tracker URL: {}", output);
                         }
 
                         if let Some(info) = map.get("info".as_bytes()) {
