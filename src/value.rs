@@ -43,7 +43,7 @@ impl fmt::Display for BencodeValue {
             BencodeValue::BInteger(code) => write!(f, "{}", code),
             BencodeValue::BList(list) => {
                 let mut output = String::new();
-                // Add a comma after the item, except for the last one
+                // Add a comma after the item
                 for item in list {
                     output.push_str(&format!("{},", item));
                 }
@@ -52,7 +52,7 @@ impl fmt::Display for BencodeValue {
             }
             BencodeValue::BDictionary(map) => {
                 let mut output = String::new();
-                // Add a comma after the item, except for the last one
+                // Add a comma after the item
                 for (key, value) in map {
                     output.push_str(&format!(r#""{}":{},"#, String::from_utf8(key.clone()).unwrap(), value));
                 }
