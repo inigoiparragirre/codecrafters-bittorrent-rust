@@ -60,7 +60,7 @@ fn main() -> stdResult<(), Box<dyn Error>> {
                             // }
                             let mut encoder = encode::Encoder::new();
                             encoder.encode(info)?;
-                            let _hash = encoder.encode_hex();
+                            let hash = encoder.encode_hex();
                             println!("Info Hash: {}", hash)
                         }
                     }
