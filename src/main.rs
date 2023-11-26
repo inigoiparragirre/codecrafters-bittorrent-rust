@@ -46,18 +46,18 @@ fn main() -> stdResult<(), Box<dyn Error>> {
             match parser.parse() {
                 Ok(decoded_value) => {
                     if let BencodeValue::BDictionary(map) = decoded_value {
-                        // if let Some(url) = map.get("announce".as_bytes()) {
-                        //     let url_string = format!("{}", url);
-                        //     let output = url_string.trim_matches('"'); // Remove quotes
-                        //     println!("Tracker URL: {}", output);
-                        // }
+                        if let Some(url) = map.get("announce".as_bytes()) {
+                            let url_string = format!("{}", url);
+                            let output = url_string.trim_matches('"'); // Remove quotes
+                            println!("Tracker URL: {}", output);
+                        }
 
                         if let Some(info) = map.get("info".as_bytes()) {
-                            // if let BencodeValue::BDictionary(map) = info {
-                            //     // if let Some(length) = map.get("length".as_bytes()) {
-                            //     //     println!("Length: {}", length);
-                            //     // }
-                            // }
+                            if let BencodeValue::BDictionary(map) = info {
+                                if let Some(length) = map.get("length".as_bytes()) {
+                                    println!("Length: {}", length);
+                                }
+                            }
                             let mut encoder = encode::Encoder::new();
                             encoder.encode(info)?;
                             let hash = encoder.encode_hex();
