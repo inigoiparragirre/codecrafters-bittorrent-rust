@@ -107,3 +107,7 @@ fn read_info(content: &[u8], info_hash: &mut String) -> stdResult<(), Box<dyn Er
         }
     }
 }
+
+fn make_peer_request() {
+    todo!("make_peer_request")
+}
