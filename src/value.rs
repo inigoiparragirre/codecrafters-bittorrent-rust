@@ -41,7 +41,7 @@ impl fmt::Display for BencodeValue {
             BencodeValue::BString(msg) => {
                 match String::from_utf8(msg.clone()) {
                     Ok(utf8_string) => write!(f, r#""{}""#,
-                                               utf8_string),
+                                              utf8_string),
                     // If the string is not valid utf8, we try to print the bytes
                     Err(_) => {
                         let mut output = String::new();
@@ -49,10 +49,9 @@ impl fmt::Display for BencodeValue {
                             output.push_str(&format!("{},", byte));
                         }
                         write!(f, "{}", output)
-                    },
+                    }
                 }
-
-            },
+            }
             BencodeValue::BInteger(code) => write!(f, "{}", code),
             BencodeValue::BList(list) => {
                 let mut output = String::new();

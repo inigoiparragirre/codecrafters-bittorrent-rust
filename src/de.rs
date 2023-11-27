@@ -10,7 +10,7 @@ struct BAccess<'a, 'de> {
 
 impl<'de: 'a, 'a> BAccess<'a, 'de> {
     fn new(de: &'a mut BDeserializer<'de>, len: Option<usize>) -> Self {
-        BAccess {de, len}
+        BAccess { de, len }
     }
 }
 
@@ -81,9 +81,9 @@ impl<'de> BDeserializer<'de> {
             b'e' => Ok(ParseDecode::End),
             b'0'..=b'9' => Ok(ParseDecode::Bytes(self.decode_bytes()?)),
             _ => Err(Error::Message(format!(
-                    "Invalid character `{}`",
-                    c as char
-                )))
+                "Invalid character `{}`",
+                c as char
+            )))
         }
         // Ok(c)
     }
@@ -98,7 +98,6 @@ impl<'de> BDeserializer<'de> {
         let length = s.parse::<usize>().unwrap();
         let bytes = &self.input[i + 1..i + 1 + length];
         Ok(bytes.to_vec())
-
     }
 
     fn decode_integer(&self) -> Result<i64> {
@@ -108,7 +107,6 @@ impl<'de> BDeserializer<'de> {
         }
         let s = std::str::from_utf8(&self.input[1..i]).unwrap();
         Ok(s.parse::<i64>().unwrap())
-
     }
 }
 

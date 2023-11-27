@@ -14,18 +14,17 @@ impl Encoder {
         }
     }
 
-    pub fn encode_hex( & self ) -> String {
-    let mut hasher = Sha1::new();
-    hasher.update( & self.buf);
-    let result = hasher.finalize();
+    pub fn encode_hex(&self) -> String {
+        let mut hasher = Sha1::new();
+        hasher.update(&self.buf);
+        let result = hasher.finalize();
 
-    // Convert the result to a hex string
-    let mut hex_string = String::new();
-    for byte in result {
-    hex_string.push_str( & format ! ("{:02x}", byte));
-    }
-    hex_string
-
+        // Convert the result to a hex string
+        let mut hex_string = String::new();
+        for byte in result {
+            hex_string.push_str(&format!("{:02x}", byte));
+        }
+        hex_string
     }
     pub fn encode(&mut self, input: &BencodeValue) -> Result<()> {
         match input {
@@ -76,11 +75,10 @@ impl Encoder {
         Ok(())
     }
 
-    pub fn encode_integer(&mut self, integer: i64) -> Result<()>   {
+    pub fn encode_integer(&mut self, integer: i64) -> Result<()> {
         self.buf.push(b'i');
         integer.to_string().as_bytes().iter().for_each(|b| self.buf.push(*b));
         self.buf.push(b'e');
         Ok(())
     }
-
 }

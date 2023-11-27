@@ -77,14 +77,9 @@ fn main() -> stdResult<(), Box<dyn Error>> {
                                             remaining_hash_data = rest;
                                             let hash_in_hex = hex::encode(hash);
                                             println!("{}", hash_in_hex);
-
                                         }
                                     }
-
-
                                 }
-
-
                             }
                         }
                     }
