@@ -57,11 +57,35 @@ fn main() -> stdResult<(), Box<dyn Error>> {
                                 if let Some(length) = map.get("length".as_bytes()) {
                                     println!("Length: {}", length);
                                 }
+
+                                if let Some(length) = map.get("piece length".as_bytes()) {
+                                    println!("Piece Length: {}", length);
+                                }
+
+                                let mut encoder = encode::Encoder::new();
+                                encoder.encode(info)?;
+                                let hash = encoder.encode_hex();
+                                println!("Info Hash: {}", hash);
+
+                                if let Some(pieces_string) = map.get("pieces".as_bytes()) {
+                                    // Get the bytes string and represent as hexadecimal
+                                    // Represent hexadecimal hash of each piece
+                                    if let BencodeValue::BString(pieces_string) = pieces_string {
+                                        let mut remaining_hash_data = &pieces_string[..];
+                                        while !remaining_hash_data.is_empty() {
+                                            let (hash, rest) = remaining_hash_data.split_at(20);
+                                            remaining_hash_data = rest;
+                                            let hash_in_hex = hex::encode(hash);
+                                            println!("{}", hash_in_hex);
+
+                                        }
+                                    }
+
+
+                                }
+
+
                             }
-                            let mut encoder = encode::Encoder::new();
-                            encoder.encode(info)?;
-                            let hash = encoder.encode_hex();
-                            println!("Info Hash: {}", hash)
                         }
                     }
                     Ok(())

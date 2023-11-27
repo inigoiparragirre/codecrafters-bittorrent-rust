@@ -2,7 +2,6 @@ use linked_hash_map::LinkedHashMap;
 use std::fmt;
 
 
-
 /// BencodeValue is an enum that represents all possible values that can be
 /// encoded in bencode.
 #[derive(Debug, PartialEq)]
@@ -39,7 +38,21 @@ impl fmt::Display for BencodeValue {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             // We output the string as a quoted string
-            BencodeValue::BString(msg) => write!(f, r#""{}""#, String::from_utf8(msg.clone()).unwrap()),
+            BencodeValue::BString(msg) => {
+                match String::from_utf8(msg.clone()) {
+                    Ok(utf8_string) => write!(f, r#""{}""#,
+                                               utf8_string),
+                    // If the string is not valid utf8, we try to print the bytes
+                    Err(_) => {
+                        let mut output = String::new();
+                        for byte in msg {
+                            output.push_str(&format!("{},", byte));
+                        }
+                        write!(f, r#""{}""#, output)
+                    },
+                }
+
+            },
             BencodeValue::BInteger(code) => write!(f, "{}", code),
             BencodeValue::BList(list) => {
                 let mut output = String::new();
