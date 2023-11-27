@@ -15,12 +15,21 @@ pub struct TrackerRequest {
     downloaded: u64,
     left: u64,
     compact: u8,
-    // no_peer_id: u8,
-    // event: String,
-    // ip: String,
-    // numwant: u32,
-    // key: String,
-    // trackerid: String,
+}
+
+// Implement default for TrackerRequest
+impl Default for TrackerRequest {
+    fn default() -> Self {
+        TrackerRequest {
+            info_hash: "".to_string(),
+            peer_id: "".to_string(),
+            port: 0,
+            uploaded: 0,
+            downloaded: 0,
+            left: 0,
+            compact: 1,
+        }
+    }
 }
 
 #[derive(Debug, Serialize)]
