@@ -6,15 +6,15 @@ pub struct Peer {
     port: u16,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct TrackerRequest {
-    info_hash: String,
-    peer_id: String,
-    port: u16,
-    uploaded: u64,
-    downloaded: u64,
-    left: u64,
-    compact: u8,
+    pub info_hash: String,
+    pub peer_id: String,
+    pub port: u16,
+    pub uploaded: u64,
+    pub downloaded: u64,
+    pub left: u64,
+    pub compact: u8,
 }
 
 // Implement default for TrackerRequest

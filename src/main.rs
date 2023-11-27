@@ -20,10 +20,14 @@ struct Arguments {
 }
 
 // Usage: your_bittorrent.sh decode "<encoded_value>"
-fn main() -> stdResult<(), Box<dyn Error>> {
+#[tokio::main]
+async fn main() -> stdResult<(), Box<dyn Error>> {
     let args: Vec<String> = env::args().collect();
     let command = &args[1].as_str();
+
+    // Declare the data that we will need to send to the tracker
     let mut info_hash = String::new();
+    let mut tracker_url = String::new();
 
 
     match *command {
@@ -42,21 +46,33 @@ fn main() -> stdResult<(), Box<dyn Error>> {
             }
         }
         "peers" => {
-            Ok(())
+            // Read the file
+            let content: &[u8] = &std::fs::read(&args[2])?;
+            read_info(content, &mut info_hash, &mut tracker_url)?;
+            match make_peer_request(info_hash, tracker_url, "12345678901234567890".to_string()).await {
+                Ok(_) => {
+                    println!("Success");
+                    Ok(())
+                }
+                Err(err) => {
+                    println!("Error making peer request: {}", err);
+                    Err(err.into())
+                }
+            }
         }
         "info" => {
             // Read the file
             let content: &[u8] = &std::fs::read(&args[2])?;
-            read_info(content, &mut info_hash)
+            read_info(content, &mut info_hash, &mut tracker_url)
         }
         _ => {
             println!("unknown command: {}", args[1]);
-            Err(Box::new(std::io::Error::new(std::io::ErrorKind::Other, "unknown command")))
+            Err(std::io::Error::new(std::io::ErrorKind::Other, "unknown command").into())
         }
     }
 }
 
-fn read_info(content: &[u8], info_hash: &mut String) -> stdResult<(), Box<dyn Error>> {
+fn read_info(content: &[u8], info_hash: &mut String, tracker_url: &mut String) -> stdResult<(), Box<dyn Error>> {
     let mut parser = decode::Parser::new(&content);
     match parser.parse() {
         Ok(decoded_value) => {
@@ -64,6 +80,8 @@ fn read_info(content: &[u8], info_hash: &mut String) -> stdResult<(), Box<dyn Er
                 if let Some(url) = map.get("announce".as_bytes()) {
                     let url_string = format!("{}", url);
                     let output = url_string.trim_matches('"'); // Remove quotes
+                    tracker_url.clear();
+                    tracker_url.push_str(output);
                     println!("Tracker URL: {}", output);
                 }
 
@@ -108,6 +126,23 @@ fn read_info(content: &[u8], info_hash: &mut String) -> stdResult<(), Box<dyn Er
     }
 }
 
-fn make_peer_request() {
-    todo!("make_peer_request")
+async fn make_peer_request(info_hash: String, tracker_url: String, peer_id: String) -> Result<(), reqwest::Error> {
+    let d = peers::TrackerRequest::default();
+    let tracker_request = peers::TrackerRequest {
+        info_hash,
+        peer_id,
+        ..d
+    };
+
+    // Make request to tracker url
+    let post_response =
+        reqwest::Client::new()
+            .post(&tracker_url)
+            .json(&tracker_request)
+            .send()
+            .await?
+            .json()
+            .await?;
+    // println!("{:#?}", post_response);
+    Ok(())
 }
