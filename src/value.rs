@@ -48,7 +48,7 @@ impl fmt::Display for BencodeValue {
                         for byte in msg {
                             output.push_str(&format!("{},", byte));
                         }
-                        write!(f, r#""{}""#, output)
+                        write!(f, "{}", output)
                     },
                 }
 
