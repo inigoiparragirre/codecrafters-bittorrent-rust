@@ -10,6 +10,7 @@ mod value;
 mod torrent;
 mod error;
 mod encode;
+mod peers;
 
 
 #[derive(Parser, Debug)]
