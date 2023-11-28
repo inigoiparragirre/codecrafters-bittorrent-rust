@@ -143,6 +143,6 @@ async fn make_peer_request(info_hash: String, tracker_url: String, peer_id: Stri
             .await?
             .json()
             .await?;
-    // println!("{:#?}", post_response);
+    println!("{:#?}", post_response);
     Ok(())
 }
