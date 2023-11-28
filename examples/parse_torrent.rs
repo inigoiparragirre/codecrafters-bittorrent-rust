@@ -1,12 +1,10 @@
-
 use std::io::Read;
 
 
-
-use bittorrent_starter_rust::decode;
-use bittorrent_starter_rust::torrent::Torrent;
-use bittorrent_starter_rust::de::{from_bytes};
-use bittorrent_starter_rust::decode::ParseDecode;
+use crate::decode;
+use crate::torrent::Torrent;
+use crate::de::{from_bytes};
+use crate::decode::ParseDecode;
 
 
 

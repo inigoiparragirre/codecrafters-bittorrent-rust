@@ -3,25 +3,23 @@ use crate::error::{Result, Error};
 use std::io::Read;
 use linked_hash_map::LinkedHashMap;
 
-// #[derive(Debug, PartialEq)]
-// pub enum ParseDecode {
-//     Integer(i64),
-//     Bytes(Vec<u8>),
-//     List,
-//     Dictionary,
-//     End,
-// }
+#[derive(Debug, PartialEq)]
+pub enum ParseDecode {
+    Integer(i64),
+    Bytes(Vec<u8>),
+    List,
+    Dictionary,
+    End,
+}
 
 pub struct Parser<'a> {
     input: &'a [u8],
-    //index: usize,
 }
 
 impl<'a> Parser<'a> {
     pub fn new(input: &'a [u8]) -> Self {
         Parser {
             input,
-            //index: 0,
         }
     }
 
