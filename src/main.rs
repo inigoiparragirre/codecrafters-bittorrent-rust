@@ -3,6 +3,7 @@ use std::error::Error;
 use std::{env};
 use clap::Parser;
 use crate::value::BencodeValue;
+use crate::torrent::Torrent;
 
 
 mod decode;
@@ -28,6 +29,8 @@ async fn main() -> stdResult<(), Box<dyn Error>> {
     // Declare the data that we will need to send to the tracker
     let mut info_hash = String::new();
     let mut tracker_url = String::new();
+    let mut torrent = torrent::Torrent::new();
+    let peer_id = "00112233445566778899".to_string();
 
 
     match *command {
@@ -48,8 +51,8 @@ async fn main() -> stdResult<(), Box<dyn Error>> {
         "peers" => {
             // Read the file
             let content: &[u8] = &std::fs::read(&args[2])?;
-            read_info(content, &mut info_hash, &mut tracker_url)?;
-            match make_peer_request(info_hash, tracker_url, "00112233445566778899".to_string()).await {
+            read_info(content, &mut info_hash, &mut tracker_url, &mut torrent)?;
+            match make_peer_request(info_hash, &torrent, peer_id).await {
                 Ok(_) => {
                     println!("Success");
                     Ok(())
@@ -63,7 +66,7 @@ async fn main() -> stdResult<(), Box<dyn Error>> {
         "info" => {
             // Read the file
             let content: &[u8] = &std::fs::read(&args[2])?;
-            read_info(content, &mut info_hash, &mut tracker_url)
+            read_info(content, &mut info_hash, &mut tracker_url, &mut torrent)
         }
         _ => {
             println!("unknown command: {}", args[1]);
@@ -72,7 +75,7 @@ async fn main() -> stdResult<(), Box<dyn Error>> {
     }
 }
 
-fn read_info(content: &[u8], info_hash: &mut String, tracker_url: &mut String) -> stdResult<(), Box<dyn Error>> {
+fn read_info(content: &[u8], info_hash: &mut String, tracker_url: &mut String, torrent: &mut Torrent) -> stdResult<(), Box<dyn Error>> {
     let mut parser = decode::Parser::new(&content);
     match parser.parse() {
         Ok(decoded_value) => {
@@ -82,6 +85,7 @@ fn read_info(content: &[u8], info_hash: &mut String, tracker_url: &mut String) -
                     let output = url_string.trim_matches('"'); // Remove quotes
                     tracker_url.clear();
                     tracker_url.push_str(output);
+                    torrent.announce = output.to_string();
                     println!("Tracker URL: {}", output);
                 }
 
@@ -89,10 +93,13 @@ fn read_info(content: &[u8], info_hash: &mut String, tracker_url: &mut String) -
                     if let BencodeValue::BDictionary(map) = info {
                         if let Some(length) = map.get("length".as_bytes()) {
                             println!("Length: {}", length);
+                            torrent.info.length = length.to_string().parse::<i64>().unwrap();
+
                         }
 
                         if let Some(length) = map.get("piece length".as_bytes()) {
                             println!("Piece Length: {}", length);
+                            torrent.info.piece_length = length.to_string().parse::<i64>().unwrap();
                         }
 
                         let mut encoder = encode::Encoder::new();
@@ -126,7 +133,7 @@ fn read_info(content: &[u8], info_hash: &mut String, tracker_url: &mut String) -
     }
 }
 
-async fn make_peer_request(info_hash: String, tracker_url: String, peer_id: String) -> Result<(), reqwest::Error> {
+async fn make_peer_request(info_hash: String, torrent: &Torrent, peer_id: String) -> Result<(), reqwest::Error> {
     let d = peers::TrackerRequest::default();
     let tracker_request = peers::TrackerRequest {
         info_hash,
@@ -138,7 +145,7 @@ async fn make_peer_request(info_hash: String, tracker_url: String, peer_id: Stri
     // Make request to tracker url
     let post_response =
         reqwest::Client::new()
-            .post(&tracker_url)
+            .post(&torrent.announce)
             .json(&tracker_request)
             .send()
             .await?
