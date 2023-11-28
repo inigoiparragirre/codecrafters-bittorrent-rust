@@ -138,6 +138,7 @@ async fn make_peer_request(info_hash: String, torrent: &Torrent, peer_id: String
     let tracker_request = peers::TrackerRequest {
         info_hash,
         peer_id,
+        left: torrent.info.length as u64,
         port: 6881,
         ..d
     };
