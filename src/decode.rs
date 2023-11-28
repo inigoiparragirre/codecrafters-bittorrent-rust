@@ -3,14 +3,14 @@ use crate::error::{Result, Error};
 use std::io::Read;
 use linked_hash_map::LinkedHashMap;
 
-#[derive(Debug, PartialEq)]
-pub enum ParseDecode {
-    Integer(i64),
-    Bytes(Vec<u8>),
-    List,
-    Dictionary,
-    End,
-}
+// #[derive(Debug, PartialEq)]
+// pub enum ParseDecode {
+//     Integer(i64),
+//     Bytes(Vec<u8>),
+//     List,
+//     Dictionary,
+//     End,
+// }
 
 pub struct Parser<'a> {
     input: &'a [u8],
