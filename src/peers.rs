@@ -1,6 +1,6 @@
 use serde_derive::{Deserialize, Serialize};
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Peer {
     ip: u32,
     port: u16,
@@ -32,8 +32,8 @@ impl Default for TrackerRequest {
     }
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct TrackerResponse {
-    interval: u64,
+    interval: i64,
     peers: Vec<Peer>,
 }
