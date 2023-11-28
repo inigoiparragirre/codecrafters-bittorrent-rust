@@ -49,7 +49,7 @@ async fn main() -> stdResult<(), Box<dyn Error>> {
             // Read the file
             let content: &[u8] = &std::fs::read(&args[2])?;
             read_info(content, &mut info_hash, &mut tracker_url)?;
-            match make_peer_request(info_hash, tracker_url, "12345678901234567890".to_string()).await {
+            match make_peer_request(info_hash, tracker_url, "00112233445566778899".to_string()).await {
                 Ok(_) => {
                     println!("Success");
                     Ok(())
@@ -131,6 +131,7 @@ async fn make_peer_request(info_hash: String, tracker_url: String, peer_id: Stri
     let tracker_request = peers::TrackerRequest {
         info_hash,
         peer_id,
+        port: 6881,
         ..d
     };
 
