@@ -147,6 +147,7 @@ async fn make_peer_request(info_hash: Vec<u8>, torrent: &Torrent, peer_id: Strin
     // };
     // println!("{:#?}", tracker_request);
 
+    // Using reqwest with query params and tracker_request doesn't work. So we try this instead:
     // Make request to tracker url
     let url_encoded_info_hash = urlencoding::encode_binary(&info_hash);
     let url_encoded_peer_id = urlencoding::encode_binary(&peer_id.as_bytes()[..]);
@@ -174,26 +175,18 @@ async fn make_peer_request(info_hash: Vec<u8>, torrent: &Torrent, peer_id: Strin
     url.push_str("compact=");
     url.push_str(1.to_string().as_str());
 
-
-    //let post_response =
+    // Make request to tracker url
     let client = reqwest::Client::new().get(url);
-
-    let post_response = client.query(&[("info_hash", url_encoded.to_string()), ("peer_id", peer_id), ("port", "6881".to_string()), ("uploaded", "0".to_string()), ("downloaded", "0".to_string()), ("left", torrent.info.length.to_string()), ("compact", "1".to_string())])
-          //  .query(&tracker_request)
+    let result_response = client
+        //client.query(&[("info_hash", url_encoded.to_string()), ("peer_id", peer_id), ("port", "6881".to_string()), ("uploaded", "0".to_string()), ("downloaded", "0".to_string()), ("left", torrent.info.length.to_string()), ("compact", "1".to_string())])
+        //.query(&tracker_request)
             .send()
             .await?
             .text()
-            .await?;
+            .await;
 
 
-    // Make request to tracker url
-    match reqwest::Client::new()
-        .get(&torrent.announce)
-        .query(&tracker_request)
-        .send()
-        .await?
-        .text()
-        .await {
+    match result_response {
         Ok(response) => {
             println!("Response peer request: {}", response);
             let decoded: peers::TrackerResponse = serde_bencode::from_str(&response).context("Error decoding serde response")?;
