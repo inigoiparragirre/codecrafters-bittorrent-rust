@@ -1,13 +1,11 @@
-use std;
 use std::fmt::{self, Display};
-
+use thiserror::Error;
 use serde::{de, ser};
 
-pub type Result<T> = std::result::Result<T, Error>;
 
 #[allow(dead_code)]
-#[derive(Debug)]
-pub enum Error {
+#[derive(Error, Debug)]
+pub enum BencodeError {
     Message(String),
     // Zero or more variants that can be created directly by the Serializer and
     // Deserializer without going through `ser::Error` and `de::Error`. These
@@ -15,30 +13,25 @@ pub enum Error {
     Eof,
     Syntax,
     // InvalidType,
-    // ExpectedBoolean,
-    // ExpectedInteger,
-    // ExpectedString,
 }
 
-impl ser::Error for Error {
+impl ser::Error for BencodeError {
     fn custom<T: Display>(msg: T) -> Self {
-        Error::Message(msg.to_string())
+        BencodeError::Message(msg.to_string())
     }
 }
 
-impl de::Error for Error {
+impl de::Error for BencodeError {
     fn custom<T: Display>(msg: T) -> Self {
-        Error::Message(msg.to_string())
+        BencodeError::Message(msg.to_string())
     }
 }
 
-impl std::error::Error for Error {}
-
-impl Display for Error {
+impl Display for BencodeError {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Error::Message(msg) => formatter.write_str(msg),
-            Error::Eof => formatter.write_str("unexpected end of input"),
+            BencodeError::Message(msg) => formatter.write_str(msg),
+            BencodeError::Eof => formatter.write_str("unexpected end of input"),
             _ => formatter.write_str("unknown error"),
         }
     }
