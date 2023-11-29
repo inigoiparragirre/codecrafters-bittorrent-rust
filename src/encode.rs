@@ -1,7 +1,7 @@
 use linked_hash_map::LinkedHashMap;
 use sha1::{Sha1, Digest};
 use crate::value::BencodeValue;
-use crate::error::{Result};
+use anyhow::Result;
 
 
 pub struct Encoder {

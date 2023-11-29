@@ -1,5 +1,6 @@
 use crate::value::BencodeValue;
-use crate::error::{Result, Error};
+use crate::error::BencodeError as Error;
+use anyhow::Result;
 use std::io::Read;
 use linked_hash_map::LinkedHashMap;
 
@@ -93,7 +94,7 @@ impl<'a> Parser<'a> {
                     return Ok(BencodeValue::BDictionary(map));
                 }
                 _ => {
-                    return Err(Error::Message(format!("Invalid key type: {:?}", key)));
+                    return Err(Error::Message(format!("Invalid key type: {:?}", key)).into());
                 }
             }
         }
@@ -132,7 +133,7 @@ impl<'a> Parser<'a> {
                 Ok(BencodeValue::BEnd)
             }
             _ => {
-                Err(Error::Message(format!("Invalid character `{}`", buf[0])))
+                Err(Error::Message(format!("Invalid character `{}`", buf[0])).into())
             }
         };
     }
