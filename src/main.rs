@@ -1,5 +1,3 @@
-use std::result::Result as stdResult;
-use std::error::Error;
 use std::{env};
 use anyhow::{Context, Result};
 use clap::Parser;
@@ -30,7 +28,7 @@ async fn main() -> Result<()> {
 
     // Declare the data that we will need to send to the tracker
     let mut info_hash: Vec<u8> = Vec::new();
-    let mut torrent = torrent::Torrent::new();
+    let mut torrent = Torrent::new();
     let peer_id = "00112233445566778899".to_string();
 
 
@@ -59,7 +57,7 @@ async fn main() -> Result<()> {
                 }
                 Err(err) => {
                     println!("Error making peer request: {}", err);
-                    Err(err.into())
+                    Err(err)
                 }
             }
         }
@@ -75,7 +73,7 @@ async fn main() -> Result<()> {
     }
 }
 
-fn read_info(content: &[u8], info_hash: &mut Vec<u8>, torrent: &mut Torrent) -> stdResult<(), Box<dyn Error>> {
+fn read_info(content: &[u8], info_hash: &mut Vec<u8>, torrent: &mut Torrent) -> Result<()> {
     let mut parser = decode::Parser::new(&content);
     match parser.parse() {
         Ok(decoded_value) => {
@@ -131,7 +129,7 @@ fn read_info(content: &[u8], info_hash: &mut Vec<u8>, torrent: &mut Torrent) -> 
     }
 }
 
-async fn make_peer_request(info_hash: Vec<u8>, torrent: &Torrent, peer_id: String) -> Result<(), Box<dyn Error>> {
+async fn make_peer_request(info_hash: Vec<u8>, torrent: &Torrent, peer_id: String) -> Result<()> {
     let d = peers::TrackerRequest::default();
 
     // URL encode the bytes of the info hash
@@ -163,7 +161,7 @@ async fn make_peer_request(info_hash: Vec<u8>, torrent: &Torrent, peer_id: Strin
         .await {
         Ok(response) => {
             println!("Response peer request: {}", response);
-            let decoded: peers::TrackerResponse = serde_bencode::from_str(&response).context("Error decoding serde response");
+            let decoded: peers::TrackerResponse = serde_bencode::from_str(&response).context("Error decoding serde response")?;
             println!("Decoded response: {:#?}", response);
             match decoded {
                 peers::TrackerResponse::Success(success) => {
