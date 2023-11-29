@@ -33,7 +33,22 @@ impl Default for TrackerRequest {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct TrackerResponse {
-    interval: i64,
-    peers: Vec<Peer>,
+pub struct TrackerResponseSuccess {
+    pub interval: i64,
+    #[serde(rename = "min interval")]
+    pub min_interval: i64,
+    pub incomplete: i64,
+    pub complete: i64,
+    pub peers: Vec<Peer>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct TrackerResponseError {
+    pub failure_reason: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub enum TrackerResponse {
+    Success(TrackerResponseSuccess),
+    Error(TrackerResponseError),
 }
