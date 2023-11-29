@@ -131,24 +131,56 @@ fn read_info(content: &[u8], info_hash: &mut Vec<u8>, torrent: &mut Torrent) -> 
 
 async fn make_peer_request(info_hash: Vec<u8>, torrent: &Torrent, peer_id: String) -> Result<()> {
     let d = peers::TrackerRequest::default();
+    let port = 6881;
 
-    // URL encode the bytes of the info hash
-
-    let url_encoded_string = percent_encoding::percent_encode(&info_hash, percent_encoding::NON_ALPHANUMERIC).to_string();
-    //println!("Encoded Info Hash: {}", url_encoded_string);
-
-    let tracker_request = peers::TrackerRequest {
-        info_hash: url_encoded_string,
-        peer_id,
-        left: torrent.info.length as u64,
-        port: 6881,
-        ..d
-    };
+    // URL encode the byte string
+    let url_encoded = percent_encoding::percent_encode(&info_hash, percent_encoding::NON_ALPHANUMERIC);
+    //println!("Encoded Info Hash: {}", url_encoded);
+    // let tracker_request = peers::TrackerRequest {
+    //     info_hash: url_encoded.to_string(),
+    //     peer_id,
+    //     left: torrent.info.length as u64,
+    //     port: 6881,
+    //     ..d
+    // };
     // println!("{:#?}", tracker_request);
+    // Make request to tracker url
+    let url_encoded_info_hash = urlencoding::encode_binary(&info_hash);
+    let url_encoded_peer_id = urlencoding::encode_binary(&peer_id.as_bytes()[..]);
+    let mut url = String::new();
+    url.push_str(torrent.announce.as_str());
+    url.push('?');
+    url.push_str("info_hash=");
+    url.push_str(&url_encoded_info_hash);
+    url.push('&');
+    url.push_str("peer_id=");
+    url.push_str(&url_encoded_peer_id);
+    url.push('&');
+    url.push_str("port=");
+    url.push_str(port.to_string().as_str());
+    url.push('&');
+    url.push_str("uploaded=");
+    url.push_str("0");
+    url.push('&');
+    url.push_str("downloaded=");
+    url.push_str("0");
+    url.push('&');
+    url.push_str("left=");
+    url.push_str(torrent.info.length.to_string().as_str());
+    url.push('&');
+    url.push_str("compact=");
+    url.push_str(1.to_string().as_str());
 
-    // Url encode params with serde_urlencoded
-    //let query_params = serde_urlencoded::to_string(&tracker_request).context("url-encoded tracker parameters")?;
-    //println!("Query Params: {:#?}", tracker_request);
+
+    //let post_response =
+    let client = reqwest::Client::new().get(url);
+
+    let post_response = client.query(&[("info_hash", url_encoded.to_string()), ("peer_id", peer_id), ("port", "6881".to_string()), ("uploaded", "0".to_string()), ("downloaded", "0".to_string()), ("left", torrent.info.length.to_string()), ("compact", "1".to_string())])
+          //  .query(&tracker_request)
+            .send()
+            .await?
+            .text()
+            .await?;
 
 
     // Make request to tracker url
