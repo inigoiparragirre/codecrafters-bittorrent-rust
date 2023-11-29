@@ -134,7 +134,9 @@ async fn make_peer_request(info_hash: Vec<u8>, torrent: &Torrent, peer_id: Strin
     let port = 6881;
 
     // URL encode the byte string
+
     let url_encoded = percent_encoding::percent_encode(&info_hash, percent_encoding::NON_ALPHANUMERIC);
+    //let d = peers::TrackerRequest::default();
     //println!("Encoded Info Hash: {}", url_encoded);
     // let tracker_request = peers::TrackerRequest {
     //     info_hash: url_encoded.to_string(),
@@ -144,6 +146,7 @@ async fn make_peer_request(info_hash: Vec<u8>, torrent: &Torrent, peer_id: Strin
     //     ..d
     // };
     // println!("{:#?}", tracker_request);
+
     // Make request to tracker url
     let url_encoded_info_hash = urlencoding::encode_binary(&info_hash);
     let url_encoded_peer_id = urlencoding::encode_binary(&peer_id.as_bytes()[..]);
