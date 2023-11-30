@@ -16,17 +16,16 @@ impl Encoder {
     }
 
     /// Encode info bytes to a sha1 hash (both hex and byte string representation)
-    pub fn encode_sha1(&self, info_hash: &mut Vec<u8>) -> String {
+    pub fn encode_sha1(&self, info_hash: &mut [u8; 20]) -> String {
         let mut hasher = Sha1::new();
         hasher.update(&self.buf);
         let result = hasher.finalize();
 
         // Convert the result to a hex string and return as output
         let mut hex_string = String::new();
-        info_hash.clear();
 
-        for byte in result {
-            info_hash.push(byte);
+        for (index, byte) in result.iter().enumerate() {
+            info_hash[index] = *byte;
             hex_string.push_str(&format!("{:02x}", byte));
 
         }

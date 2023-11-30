@@ -1,7 +1,6 @@
 use std::{env};
 use anyhow::{Context, Result};
 use clap::Parser;
-use percent_encoding::utf8_percent_encode;
 use crate::value::BencodeValue;
 use crate::torrent::Torrent;
 
@@ -27,7 +26,7 @@ async fn main() -> Result<()> {
     let command = &args[1].as_str();
 
     // Declare the data that we will need to send to the tracker
-    let mut info_hash: Vec<u8> = Vec::new();
+    let mut info_hash= [0; 20];
     let mut torrent = Torrent::new();
     let peer_id = "00112233445566778899".to_string();
 
@@ -51,7 +50,7 @@ async fn main() -> Result<()> {
             // Read the file
             let content: &[u8] = &std::fs::read(&args[2])?;
             read_info(content, &mut info_hash, &mut torrent)?;
-            match make_peer_request(info_hash, &torrent, peer_id).await {
+            match make_peer_request(& info_hash, &torrent, peer_id).await {
                 Ok(_) => {
                     Ok(())
                 }
@@ -73,7 +72,7 @@ async fn main() -> Result<()> {
     }
 }
 
-fn read_info(content: &[u8], info_hash: &mut Vec<u8>, torrent: &mut Torrent) -> Result<()> {
+fn read_info(content: &[u8], info_hash: &mut [u8; 20], torrent: &mut Torrent) -> Result<()> {
     let mut parser = decode::Parser::new(&content);
     match parser.parse() {
         Ok(decoded_value) => {
@@ -129,87 +128,58 @@ fn read_info(content: &[u8], info_hash: &mut Vec<u8>, torrent: &mut Torrent) -> 
     }
 }
 
-async fn make_peer_request(info_hash: Vec<u8>, torrent: &Torrent, peer_id: String) -> Result<()> {
+async fn make_peer_request(info_hash: &[u8; 20], torrent: &Torrent, peer_id: String) -> Result<()> {
     let d = peers::TrackerRequest::default();
-    let port = 6881;
+    const PORT: u16 = 6881;
 
     // URL encode the byte string
-
-    let url_encoded = percent_encoding::percent_encode(&info_hash, percent_encoding::NON_ALPHANUMERIC);
-    //let d = peers::TrackerRequest::default();
-    //println!("Encoded Info Hash: {}", url_encoded);
-    // let tracker_request = peers::TrackerRequest {
-    //     info_hash: url_encoded.to_string(),
-    //     peer_id,
-    //     left: torrent.info.length as u64,
-    //     port: 6881,
-    //     ..d
-    // };
+    let tracker_request = peers::TrackerRequest {
+        peer_id,
+        left: torrent.info.length as u64,
+        port: PORT,
+        ..d
+    };
+    // This cannot be urlencoded by serialize, it goes apart
+    let encoded_info_hash = peers::url_encode(info_hash);
     // println!("{:#?}", tracker_request);
-
-    // Using reqwest with query params and tracker_request doesn't work. So we try this instead:
-    // Make request to tracker url
-    let url_encoded_info_hash = urlencoding::encode_binary(&info_hash);
-    let url_encoded_peer_id = urlencoding::encode_binary(&peer_id.as_bytes()[..]);
-    let mut url = String::new();
-    url.push_str(torrent.announce.as_str());
-    url.push('?');
-    url.push_str("info_hash=");
-    url.push_str(&url_encoded_info_hash);
-    url.push('&');
-    url.push_str("peer_id=");
-    url.push_str(&url_encoded_peer_id);
-    url.push('&');
-    url.push_str("port=");
-    url.push_str(port.to_string().as_str());
-    url.push('&');
-    url.push_str("uploaded=");
-    url.push_str("0");
-    url.push('&');
-    url.push_str("downloaded=");
-    url.push_str("0");
-    url.push('&');
-    url.push_str("left=");
-    url.push_str(torrent.info.length.to_string().as_str());
-    url.push('&');
-    url.push_str("compact=");
-    url.push_str(1.to_string().as_str());
+    let encoded_request = serde_urlencoded::to_string(tracker_request).context("Error encoding tracker request")?;
+    // println!("Encoded request: {}", encoded_request);
 
     // Make request to tracker url
+    let url = format!("{}?{}&info_hash={}", torrent.announce, encoded_request, encoded_info_hash);
+    println!("URL: {}", url);
     let client = reqwest::Client::new().get(url);
     let result_response = client
-        //client.query(&[("info_hash", url_encoded.to_string()), ("peer_id", peer_id), ("port", "6881".to_string()), ("uploaded", "0".to_string()), ("downloaded", "0".to_string()), ("left", torrent.info.length.to_string()), ("compact", "1".to_string())])
-        //.query(&tracker_request)
             .send()
             .await?
             .text()
-            .await;
+            .await?;
+    let decoded: peers::TrackerResponseSuccess = serde_bencode::from_str(&result_response).context("Error decoding serde response")?;
+    println!("{:#?}", decoded);
 
-
-    match result_response {
-        Ok(response) => {
-            println!("Response peer request: {}", response);
-            let decoded: peers::TrackerResponse = serde_bencode::from_str(&response).context("Error decoding serde response")?;
-            println!("Decoded response: {:#?}", response);
-            match decoded {
-                peers::TrackerResponse::Success(success) => {
-                    println!("Success: {:#?}", success);
-                }
-                peers::TrackerResponse::Error(error) => {
-                    println!("Error: {:#?}", error);
-                }
-            }
-        }
-        Err(err) => {
-            println!("Error making request: {}", err.to_string());
-        }
-    }
+    // match result_response {
+    //     Ok(response) => {
+    //         println!("Response peer request: {}", response);
+    //         let decoded: peers::TrackerResponse = serde_bencode::from_str(&response).context("Error decoding serde response")?;
+    //         println!("Decoded response: {:#?}", response);
+    //         match decoded {
+    //             peers::TrackerResponse::Success(success) => {
+    //                 println!("Success: {:#?}", success);
+    //             }
+    //             peers::TrackerResponse::Error(error) => {
+    //                 println!("Error: {:#?}", error);
+    //             }
+    //         }
+    //     }
+    //     Err(err) => {
+    //         println!("Error making request: {}", err.to_string());
+    //     }
+    // }
 
 
     // let good_post_response = r#"d8:completei1e10:downloadedi1e10:incompletei1e8:intervali1800e12:min intervali900e5:peers12:
-    //
     // let decoded: peers::TrackerResponse = serde_bencode::from_str(&good_post_response)?;
     //
-    // println!("{:#?}", decoded);
+
     Ok(())
 }

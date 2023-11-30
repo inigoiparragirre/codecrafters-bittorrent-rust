@@ -6,9 +6,8 @@ pub struct Peer {
     port: u16,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize)]
 pub struct TrackerRequest {
-    pub info_hash: String,
     pub peer_id: String,
     pub port: u16,
     pub uploaded: u64,
@@ -17,11 +16,19 @@ pub struct TrackerRequest {
     pub compact: u8,
 }
 
+pub fn url_encode(info_hash: &[u8; 20]) -> String {
+    let mut url_encoded = String::new();
+    for byte in info_hash {
+        url_encoded.push_str(&format!("%{:02x}", byte));
+    }
+    url_encoded
+
+}
+
 // Implement default for TrackerRequest
 impl Default for TrackerRequest {
     fn default() -> Self {
         TrackerRequest {
-            info_hash: "".to_string(),
             peer_id: "".to_string(),
             port: 0,
             uploaded: 0,
