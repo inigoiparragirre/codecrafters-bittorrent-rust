@@ -1,29 +1,30 @@
 use serde_derive::{Deserialize, Serialize};
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Handshake<'a> {
+    pub info_hash: &'a[u8],
+    pub peer_id: String,
+    pub length: u8,
+    pub p_str: String,
+}
+
+
+impl<'a> Handshake<'a> {
+    pub fn new(info_hash: &[u8], peer_id: String) -> Handshake {
+        Handshake {
+            length: 19,
+            p_str: "BitTorrent protocol".to_string(),
+            info_hash,
+            peer_id,
+        }
+    }
+}
 
 pub mod peer {
     use std::fmt;
     use std::net::{Ipv4Addr, SocketAddrV4};
     use serde::{Deserialize, Deserializer};
     use serde::de::Visitor;
-
-    pub struct Handshake<'a> {
-        pub info_hash: &'a[u8; 20],
-        pub peer_id: String,
-        pub length: u8,
-        pub p_str: String,
-    }
-
-    impl<'a> Handshake<'a> {
-        pub fn new(info_hash: &[u8; 20], peer_id: String) -> Handshake {
-            Handshake {
-                length: 19,
-                p_str: "BitTorrent protocol".to_string(),
-                info_hash,
-                peer_id,
-            }
-        }
-    }
 
     #[derive(Debug, Clone)]
     pub struct Peers(pub Vec<SocketAddrV4>);

@@ -4,9 +4,10 @@ use anyhow::{Context, Result};
 use clap::Parser;
 use crate::value::BencodeValue;
 use crate::torrent::Torrent;
+use std::io::{Read, Write};
 
 
-use peers::peer::Handshake;
+use peers::Handshake;
 
 
 mod decode;
@@ -69,9 +70,17 @@ async fn main() -> Result<()> {
             let content: &[u8] = &std::fs::read(&args[2])?;
             let socket_addr = args[3].parse::<SocketAddr>().context("Error parsing socket address")?;
             read_info(content, &mut info_hash, &mut torrent)?;
-            if let Ok(stream) = TcpStream::connect(socket_addr) {
+            if let Ok(mut stream) = TcpStream::connect(socket_addr) {
                 let handshake = Handshake::new(&info_hash, peer_id);
-                //println!("Handshake: {:?}", handshake);
+                let serialized = serde_json::to_string(&handshake).expect("Serialization failed for handshake");
+                let bytes = serialized.as_bytes();
+                stream.write_all(bytes).expect("Error writing to stream");
+
+                // Read data from the stream
+                let mut buffer = [0; 1024];
+                stream.read(&mut buffer).expect("Error reading from stream");
+                let response = String::from_utf8_lossy(&buffer);
+                println!("Handshake: {:?}", response);
                 Ok(())
                 //stream.
             }
