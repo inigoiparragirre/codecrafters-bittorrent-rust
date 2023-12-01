@@ -95,7 +95,7 @@ async fn main() -> Result<()> {
 }
 
 async fn make_handshake() -> Result<()> {
-todo!()
+Ok(())
 }
 
 fn read_info(content: &[u8], info_hash: &mut [u8; 20], torrent: &mut Torrent) -> Result<()> {
