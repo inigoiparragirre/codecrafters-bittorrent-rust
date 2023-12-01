@@ -153,10 +153,6 @@ async fn make_peer_request(info_hash: &[u8; 20], torrent: &Torrent, peer_id: Str
         .send()
         .await?;
     let response_bytes = result_response.bytes().await?;
-
-    // println!("Response bytes: {:?}", result_response.as_bytes());
-    //let test_bytes = [100, 56, 58, 99, 111, 109, 112, 108, 101, 116, 101, 105, 49, 49, 101, 49, 48, 58, 105, 110, 99, 111, 109, 112, 108, 101, 116, 101, 105, 49, 101, 56, 58, 105, 110, 116, 101, 114, 118, 97, 108, 105, 49, 56, 48, 48, 101, 49, 50, 58, 109, 105, 110, 32, 105, 110, 116, 101, 114, 118, 97, 108, 105, 49, 56, 48, 48, 101, 53, 58, 112, 101, 101, 114, 115, 55, 50, 58, 106, 72, 239, 191, 189, 0, 239, 191, 189, 13, 239, 191, 189, 119, 61, 239, 191, 189, 26, 239, 191, 189, 2, 7, 239, 191, 189, 20, 239, 191, 189, 239, 191, 189, 71, 239, 191, 189, 0, 29, 239, 191, 189, 239, 191, 189, 37, 48, 74, 20, 239, 191, 189, 239, 191, 189, 82, 239, 191, 189, 239, 191, 189, 239, 191, 189, 26, 239, 191, 189, 72, 239, 191, 189, 28, 2, 239, 191, 189, 86, 45, 67, 239, 191, 189, 74, 239, 191, 189, 103, 239, 191, 189, 90, 239, 191, 189, 221, 178, 114, 66, 55, 239, 191, 189, 70, 239, 191, 189, 96, 69, 53, 20, 239, 191, 189, 239, 191, 189, 96, 239, 191, 189, 195, 129, 27, 239, 191, 189, 96, 101];
-
     let decoded: peers::TrackerResponseSuccess = serde_bencode::from_bytes(&response_bytes).context("Error decoding serde response")?;
     //println!("{:#?}", decoded);
 
@@ -165,30 +161,6 @@ async fn make_peer_request(info_hash: &[u8; 20], torrent: &Torrent, peer_id: Str
     for peer in peers {
         println!("{}", peer);
     }
-
-    // match result_response {
-    //     Ok(response) => {
-    //         println!("Response peer request: {}", response);
-    //         let decoded: peers::TrackerResponse = serde_bencode::from_str(&response).context("Error decoding serde response")?;
-    //         println!("Decoded response: {:#?}", response);
-    //         match decoded {
-    //             peers::TrackerResponse::Success(success) => {
-    //                 println!("Success: {:#?}", success);
-    //             }
-    //             peers::TrackerResponse::Error(error) => {
-    //                 println!("Error: {:#?}", error);
-    //             }
-    //         }
-    //     }
-    //     Err(err) => {
-    //         println!("Error making request: {}", err.to_string());
-    //     }
-    // }
-
-
-    // let good_post_response = r#"d8:completei1e10:downloadedi1e10:incompletei1e8:intervali1800e12:min intervali900e5:peers12:
-    // let decoded: peers::TrackerResponse = serde_bencode::from_str(&good_post_response)?;
-    //
 
     Ok(())
 }
