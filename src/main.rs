@@ -71,10 +71,10 @@ async fn main() -> Result<()> {
             let socket_addr = args[3].parse::<SocketAddr>().context("Error parsing socket address")?;
             read_info(content, &mut info_hash, &mut torrent)?;
             if let Ok(mut stream) = TcpStream::connect(socket_addr) {
-                let handshake = Handshake::new(&info_hash, peer_id);
-                let serialized = serde_json::to_string(&handshake).expect("Serialization failed for handshake");
-                let bytes = serialized.as_bytes();
-                stream.write_all(bytes).expect("Error writing to stream");
+                let handshake = Handshake::new(info_hash, *b"00112233445566778899");
+                let serialized_bytes = bincode::serialize(&handshake).expect("Serialization failed for handshake");
+                println!("Serialized: {:?}", serialized_bytes);
+                stream.write_all(&serialized_bytes).expect("Error writing to stream");
 
                 // Read data from the stream
                 let mut buffer = [0; 1024];
@@ -103,9 +103,9 @@ async fn main() -> Result<()> {
     }
 }
 
-async fn make_handshake() -> Result<()> {
-Ok(())
-}
+// async fn make_handshake() -> Result<()> {
+// Ok(())
+// }
 
 fn read_info(content: &[u8], info_hash: &mut [u8; 20], torrent: &mut Torrent) -> Result<()> {
     let mut parser = decode::Parser::new(&content);

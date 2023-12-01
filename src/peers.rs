@@ -1,19 +1,21 @@
 use serde_derive::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct Handshake<'a> {
-    pub info_hash: &'a[u8],
-    pub peer_id: String,
+pub struct Handshake {
     pub length: u8,
-    pub p_str: String,
+    pub p_str: [u8; 19],
+    pub reserved: [u8; 8],
+    pub info_hash: [u8; 20],
+    pub peer_id: [u8; 20],
 }
 
 
-impl<'a> Handshake<'a> {
-    pub fn new(info_hash: &[u8], peer_id: String) -> Handshake {
+impl Handshake {
+    pub fn new(info_hash: [u8; 20], peer_id: [u8; 20]) -> Handshake {
         Handshake {
             length: 19,
-            p_str: "BitTorrent protocol".to_string(),
+            p_str: *b"BitTorrent protocol",
+            reserved: [0; 8],
             info_hash,
             peer_id,
         }
