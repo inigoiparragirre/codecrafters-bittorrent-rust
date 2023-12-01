@@ -7,10 +7,28 @@ pub mod peer {
     use serde::{Deserialize, Deserializer};
     use serde::de::Visitor;
 
-    #[derive(Debug, Clone)]
-    pub struct PeerTuple(pub Vec<SocketAddrV4>);
+    pub struct Handshake<'a> {
+        pub info_hash: &'a[u8; 20],
+        pub peer_id: String,
+        pub length: u8,
+        pub p_str: String,
+    }
 
-    impl<'de> Deserialize<'de> for PeerTuple {
+    impl<'a> Handshake<'a> {
+        pub fn new(info_hash: &[u8; 20], peer_id: String) -> Handshake {
+            Handshake {
+                length: 19,
+                p_str: "BitTorrent protocol".to_string(),
+                info_hash,
+                peer_id,
+            }
+        }
+    }
+
+    #[derive(Debug, Clone)]
+    pub struct Peers(pub Vec<SocketAddrV4>);
+
+    impl<'de> Deserialize<'de> for Peers {
         fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
             where
                 D: Deserializer<'de>,
@@ -22,7 +40,7 @@ pub mod peer {
     struct PeerVisitor;
 
     impl<'de> Visitor<'de> for PeerVisitor {
-        type Value = PeerTuple;
+        type Value = Peers;
 
 
         fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
@@ -36,7 +54,7 @@ pub mod peer {
             if v.len() % 6 != 0 {
                 return Err(E::custom(format!("bytes length error for peers {}", v.len())));
             }
-            Ok(PeerTuple(
+            Ok(Peers(
                 v.chunks_exact(6)
                     .map(|slice_6| {
                         SocketAddrV4::new(
@@ -52,7 +70,7 @@ pub mod peer {
 
 }
 
-use peer::PeerTuple;
+use peer::Peers;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct TrackerRequest {
@@ -93,18 +111,8 @@ pub struct TrackerResponseSuccess {
     pub min_interval: i64,
     pub incomplete: i64,
     pub complete: i64,
-    pub peers: PeerTuple,
+    pub peers: Peers,
 }
 
-// #[derive(Debug, Deserialize)]
-// pub struct TrackerResponseError {
-//     pub failure_reason: String,
-// }
-
-// #[derive(Debug, Deserialize)]
-// pub enum TrackerResponse {
-//     Success(TrackerResponseSuccess),
-//     Error(TrackerResponseError),
-// }
 
 

@@ -1,8 +1,12 @@
 use std::{env};
+use std::net::{SocketAddr, TcpStream};
 use anyhow::{Context, Result};
 use clap::Parser;
 use crate::value::BencodeValue;
 use crate::torrent::Torrent;
+
+
+use peers::peer::Handshake;
 
 
 mod decode;
@@ -60,6 +64,24 @@ async fn main() -> Result<()> {
                 }
             }
         }
+        "handshake" => {
+            // Read the file
+            let content: &[u8] = &std::fs::read(&args[2])?;
+            let socket_addr = args[3].parse::<SocketAddr>().context("Error parsing socket address")?;
+            read_info(content, &mut info_hash, &mut torrent)?;
+            if let Ok(stream) = TcpStream::connect(socket_addr) {
+                let handshake = Handshake::new(&info_hash, peer_id);
+                //println!("Handshake: {:?}", handshake);
+                Ok(())
+                //stream.
+            }
+            else {
+                println!("Error connecting to socket address");
+                anyhow::bail!("Error connecting to socket address");
+            }
+
+
+        }
         "info" => {
             // Read the file
             let content: &[u8] = &std::fs::read(&args[2])?;
@@ -70,6 +92,10 @@ async fn main() -> Result<()> {
             Err(std::io::Error::new(std::io::ErrorKind::Other, "unknown command").into())
         }
     }
+}
+
+async fn make_handshake() -> Result<()> {
+todo!()
 }
 
 fn read_info(content: &[u8], info_hash: &mut [u8; 20], torrent: &mut Torrent) -> Result<()> {
