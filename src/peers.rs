@@ -1,5 +1,24 @@
 use serde_derive::{Deserialize, Serialize};
 
+
+pub enum PeerMessageType {
+    Choke,
+    Unchoke,
+    Interested,
+    NotInterested,
+    Have,
+    Bitfield,
+    Request,
+    Piece,
+    Cancel,
+}
+
+struct PeerMessage {
+    id: u8,
+    length: u32,
+    payload: Vec<u8>,
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Handshake {
     pub length: u8,
