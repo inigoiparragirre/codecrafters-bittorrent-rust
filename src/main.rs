@@ -91,7 +91,7 @@ async fn main() -> Result<()> {
 
 
         }
-        "download piece" => {
+        "download_piece" => {
             // Once the handshake is complete, we send a bitfield message
 
 
