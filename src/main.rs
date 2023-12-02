@@ -61,15 +61,9 @@ async fn main() -> Result<()> {
             // Read the file
             let content: &[u8] = &std::fs::read(&args[2])?;
             read_info(content, &mut info_hash, &mut torrent, true)?;
-            match make_peer_request(&info_hash, &torrent, peer_id).await {
-                Ok(_) => {
-                    Ok(())
-                }
-                Err(err) => {
-                    println!("Error making peer request: {}", err);
-                    Err(err)
-                }
-            }
+            make_peer_request(&info_hash, &torrent, peer_id).await.context("Error making peer request")?;
+            Ok(())
+
         }
         "handshake" => {
             // Read the file
@@ -94,6 +88,8 @@ async fn main() -> Result<()> {
             todo!("Wait for a piece message for each block requested");
 
             todo!("Check the integrity of each piece block");
+
+            Ok(())
         }
         _ => {
             println!("unknown command: {}", args[1]);
