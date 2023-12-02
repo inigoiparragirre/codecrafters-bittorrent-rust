@@ -82,7 +82,7 @@ async fn main() -> Result<()> {
                 let handshake_response: Handshake = bincode::deserialize(&buffer).expect("Error deserializing handshake");
                 println!("Peer ID: {}", handshake_response.peer_id.iter().map(|b| format!("{:02x}", b)).collect::<String>());
                 Ok(())
-                //stream.
+
             }
             else {
                 println!("Error connecting to socket address");
@@ -90,6 +90,21 @@ async fn main() -> Result<()> {
             }
 
 
+        }
+        "download piece" => {
+            // Once the handshake is complete, we send a bitfield message
+
+
+            // We send an interested message
+            todo!("Send interested message");
+            // Wait to receive an unchocke message back
+            todo!("Wait to receive unchoke message");
+
+            todo!("Break the piece into blocks of 16kiB");
+
+            todo!("Wait for a piece message for each block requested");
+
+            todo!("Check the integrity of each piece block");
         }
         "info" => {
             // Read the file
