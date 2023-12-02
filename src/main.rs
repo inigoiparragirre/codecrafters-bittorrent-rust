@@ -5,9 +5,9 @@ use clap::Parser;
 use crate::value::BencodeValue;
 use crate::torrent::Torrent;
 use std::io::{Read, Write};
-
-
 use peers::Handshake;
+use tracker::{TrackerResponseSuccess, TrackerRequest};
+use crate::peers::addr::Address;
 
 
 mod decode;
@@ -16,6 +16,7 @@ mod torrent;
 mod error;
 mod encode;
 mod peers;
+mod tracker;
 
 
 #[derive(Parser, Debug)]
@@ -51,6 +52,11 @@ async fn main() -> Result<()> {
                 }
             }
         }
+        "info" => {
+            // Read the file
+            let content: &[u8] = &std::fs::read(&args[2])?;
+            read_info(content, &mut info_hash, &mut torrent, true)
+        }
         "peers" => {
             // Read the file
             let content: &[u8] = &std::fs::read(&args[2])?;
@@ -70,25 +76,8 @@ async fn main() -> Result<()> {
             let content: &[u8] = &std::fs::read(&args[2])?;
             let socket_addr = args[3].parse::<SocketAddr>().context("Error parsing socket address")?;
             read_info(content, &mut info_hash, &mut torrent, false)?;
-            if let Ok(mut stream) = TcpStream::connect(socket_addr) {
-                let handshake = Handshake::new(info_hash, *b"00112233445566778899");
-                let serialized_bytes = bincode::serialize(&handshake).expect("Serialization failed for handshake");
-                //println!("Serialized: {:?}", serialized_bytes);
-                stream.write_all(&serialized_bytes).expect("Error writing to stream");
-
-                // Read data from the stream
-                let mut buffer = [0; 256];
-                stream.read(&mut buffer).expect("Error reading from stream");
-                let handshake_response: Handshake = bincode::deserialize(&buffer).expect("Error deserializing handshake");
-                println!("Peer ID: {}", handshake_response.peer_id.iter().map(|b| format!("{:02x}", b)).collect::<String>());
-                Ok(())
-
-            }
-            else {
-                println!("Error connecting to socket address");
-                anyhow::bail!("Error connecting to socket address");
-            }
-
+            make_handshake(&info_hash, &socket_addr).context("Error making handshake")?;
+            Ok(())
 
         }
         "download_piece" => {
@@ -106,11 +95,6 @@ async fn main() -> Result<()> {
 
             todo!("Check the integrity of each piece block");
         }
-        "info" => {
-            // Read the file
-            let content: &[u8] = &std::fs::read(&args[2])?;
-            read_info(content, &mut info_hash, &mut torrent, true)
-        }
         _ => {
             println!("unknown command: {}", args[1]);
             Err(std::io::Error::new(std::io::ErrorKind::Other, "unknown command").into())
@@ -118,9 +102,25 @@ async fn main() -> Result<()> {
     }
 }
 
-// async fn make_handshake() -> Result<()> {
-// Ok(())
-// }
+fn make_handshake(info_hash: &[u8;20], socket_addr: &SocketAddr) -> Result<()> {
+    if let Ok(mut stream) = TcpStream::connect(socket_addr) {
+        let handshake = Handshake::new(*info_hash, *b"00112233445566778899");
+        let serialized_bytes = bincode::serialize(&handshake).expect("Serialization failed for handshake");
+        //println!("Serialized: {:?}", serialized_bytes);
+        stream.write_all(&serialized_bytes).expect("Error writing to stream");
+
+        // Read data from the stream
+        let mut buffer = [0; 256];
+        stream.read(&mut buffer).expect("Error reading from stream");
+        let handshake_response: Handshake = bincode::deserialize(&buffer).expect("Error deserializing handshake");
+        println!("Peer ID: {}", handshake_response.peer_id.iter().map(|b| format!("{:02x}", b)).collect::<String>());
+        Ok(())
+    }
+    else {
+        println!("Error connecting to socket address");
+        anyhow::bail!("Error connecting to socket address");
+    }
+}
 
 fn read_info(content: &[u8], info_hash: &mut [u8; 20], torrent: &mut Torrent, print: bool) -> Result<()> {
     let mut parser = decode::Parser::new(&content);
@@ -179,18 +179,18 @@ fn read_info(content: &[u8], info_hash: &mut [u8; 20], torrent: &mut Torrent, pr
 }
 
 async fn make_peer_request(info_hash: &[u8; 20], torrent: &Torrent, peer_id: String) -> Result<()> {
-    let d = peers::TrackerRequest::default();
+    let d = TrackerRequest::default();
     const PORT: u16 = 6881;
 
     // URL encode the byte string
-    let tracker_request = peers::TrackerRequest {
+    let tracker_request = TrackerRequest {
         peer_id,
         left: torrent.info.length as u64,
         port: PORT,
         ..d
     };
     // This cannot be urlencoded by serialize, it goes apart
-    let encoded_info_hash = peers::url_encode(info_hash);
+    let encoded_info_hash = url_encode(info_hash);
     // println!("{:#?}", tracker_request);
     let encoded_request = serde_urlencoded::to_string(tracker_request).context("Error encoding tracker request")?;
     // println!("Encoded request: {}", encoded_request);
@@ -199,18 +199,25 @@ async fn make_peer_request(info_hash: &[u8; 20], torrent: &Torrent, peer_id: Str
     let url = format!("{}?{}&info_hash={}", torrent.announce, encoded_request, encoded_info_hash);
     println!("URL: {}", url);
     let client = reqwest::Client::new().get(url);
-    let result_response = client
+    let response_bytes = client
         .send()
-        .await?;
-    let response_bytes = result_response.bytes().await?;
-    let decoded: peers::TrackerResponseSuccess = serde_bencode::from_bytes(&response_bytes).context("Error decoding serde response")?;
-    //println!("{:#?}", decoded);
+        .await?
+        .bytes().await?;
+    let TrackerResponseSuccess {
+        peers: Address(list_peers), ..
+    } = serde_bencode::from_bytes(&response_bytes).context("Error decoding serde response")?;
 
-    let peers = decoded.peers.0;
-
-    for peer in peers {
+    for peer in list_peers {
         println!("{}", peer);
     }
 
     Ok(())
+}
+
+pub fn url_encode(info_hash: &[u8; 20]) -> String {
+    let mut url_encoded = String::new();
+    for byte in info_hash {
+        url_encoded.push_str(&format!("%{:02x}", byte));
+    }
+    url_encoded
 }
