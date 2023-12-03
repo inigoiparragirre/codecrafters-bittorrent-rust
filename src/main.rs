@@ -27,6 +27,7 @@ struct Cli {
 }
 
 #[derive(Subcommand)]
+#[clap(rename_all = "snake_case")]
 enum Commands {
     Decode {
         encoded_value: String,
