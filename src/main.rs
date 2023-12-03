@@ -4,7 +4,7 @@ use anyhow::{Context, Result};
 use clap::Parser;
 use crate::value::BencodeValue;
 use crate::torrent::Torrent;
-use std::io::{Read, Write};
+use std::io::{BufRead, BufReader, Write};
 use peers::Handshake;
 use tracker::{TrackerResponseSuccess, TrackerRequest};
 use crate::peers::addr::Address;
@@ -76,10 +76,26 @@ async fn main() -> Result<()> {
         }
         "download_piece" => {
             // Once the handshake is complete, we send a bitfield message
+            // Read the file
+            let content: &[u8] = &std::fs::read(&args[2])?;
+            let socket_addr = args[3].parse::<SocketAddr>().context("Error parsing socket address")?;
+            read_info(content, &mut info_hash, &mut torrent, false)?;
+            let stream: TcpStream = make_handshake(&info_hash, &socket_addr).context("Error making handshake")?;
+            let mut reader = BufReader::new(&stream);
 
+            // Read the current data from the stream
+            let received_bitfield: Vec<u8> = reader.fill_buf().expect("Error reading from stream for bitfield message").to_vec();
+            let bitfield_message: peers::PeerMessageType = bincode::deserialize(&received_bitfield).expect("Error deserializing bitfield message");
+            match bitfield_message {
+                peers::PeerMessageType::Bitfield => {
+                    println!("Bitfield: {:?}", bitfield_message);
+                }
+                _ => {
+                    println!("Error: Expected bitfield message");
+                    anyhow::bail!("Error: Expected bitfield message");
+                }
+            }
 
-            // We send an interested message
-            todo!("Send interested message");
             // Wait to receive an unchocke message back
             todo!("Wait to receive unchoke message");
 
@@ -98,19 +114,26 @@ async fn main() -> Result<()> {
     }
 }
 
-fn make_handshake(info_hash: &[u8;20], socket_addr: &SocketAddr) -> Result<()> {
+fn make_handshake(info_hash: &[u8;20], socket_addr: &SocketAddr) -> Result<TcpStream> {
+
+    // Make a TCP connection to the socket address and wait for handshake response
     if let Ok(mut stream) = TcpStream::connect(socket_addr) {
+
         let handshake = Handshake::new(*info_hash, *b"00112233445566778899");
         let serialized_bytes = bincode::serialize(&handshake).expect("Serialization failed for handshake");
         //println!("Serialized: {:?}", serialized_bytes);
         stream.write_all(&serialized_bytes).expect("Error writing to stream");
 
-        // Read data from the stream
-        let mut buffer = [0; 256];
-        stream.read(&mut buffer).expect("Error reading from stream");
-        let handshake_response: Handshake = bincode::deserialize(&buffer).expect("Error deserializing handshake");
+        // Wrap the stream in a BufReader
+        let mut reader = BufReader::new(&stream);
+        // Read the current data from the stream
+        let received: Vec<u8> = reader.fill_buf().expect("Error reading from stream").to_vec();
+        let handshake_response: Handshake = bincode::deserialize(&received).expect("Error deserializing handshake");
         println!("Peer ID: {}", handshake_response.peer_id.iter().map(|b| format!("{:02x}", b)).collect::<String>());
-        Ok(())
+
+        // Consume the buffer
+        reader.consume(received.len());
+        Ok(stream)
     }
     else {
         println!("Error connecting to socket address");

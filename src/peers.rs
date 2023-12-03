@@ -1,8 +1,9 @@
 use serde_derive::{Deserialize, Serialize};
 
+#[repr(u8)]
 #[derive(Debug, Serialize, Deserialize)]
 pub enum PeerMessageType {
-    Choke,
+    Choke=0,
     Unchoke,
     Interested,
     NotInterested,
