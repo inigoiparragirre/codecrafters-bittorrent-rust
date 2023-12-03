@@ -1,10 +1,10 @@
-use std::{env};
 use std::net::{SocketAddr, TcpStream};
 use anyhow::{Context, Result};
-use clap::Parser;
+use clap::{Parser, Subcommand};
 use crate::value::BencodeValue;
 use crate::torrent::Torrent;
 use std::io::{BufRead, BufReader, Write};
+use std::path::PathBuf;
 use peers::Handshake;
 use tracker::{TrackerResponseSuccess, TrackerRequest};
 use crate::peers::addr::Address;
@@ -19,17 +19,42 @@ mod peers;
 mod tracker;
 
 
-#[derive(Parser, Debug)]
-struct Arguments {
-    info: String,
-    file_name: String,
+#[derive(Parser)]
+#[command(author, version, about, long_about = None)]
+struct Cli {
+    #[command(subcommand)]
+    command: Commands,
+}
+
+#[derive(Subcommand)]
+enum Commands {
+    Decode {
+        encoded_value: String,
+    },
+    Info {
+        file: String,
+    },
+    Peers {
+        file: String,
+    },
+    Handshake {
+        file: String,
+        socket_addr: String,
+    },
+    DownloadPiece {
+        #[clap(short, long)]
+        output: PathBuf,
+        file: PathBuf,
+        piece_index: usize,
+
+    }
 }
 
 // Usage: your_bittorrent.sh decode "<encoded_value>"
 #[tokio::main]
 async fn main() -> Result<()> {
-    let args: Vec<String> = env::args().collect();
-    let command = &args[1].as_str();
+    // Parse the command line arguments
+    let cli = Cli::parse();
 
     // Declare the data that we will need to send to the tracker
     let mut info_hash = [0; 20];
@@ -37,9 +62,9 @@ async fn main() -> Result<()> {
     let peer_id = "00112233445566778899".to_string();
 
 
-    match *command {
-        "decode" => {
-            let encoded_bytes = &args[2].as_bytes();
+    match &cli.command {
+        Commands::Decode { encoded_value} => {
+            let encoded_bytes = encoded_value.as_bytes();
             let mut parser = decode::Parser::new(&encoded_bytes);
             match parser.parse() {
                 Ok(decoded_value) => {
@@ -52,34 +77,43 @@ async fn main() -> Result<()> {
                 }
             }
         }
-        "info" => {
+        Commands::Info {
+            file,
+        } => {
             // Read the file
-            let content: &[u8] = &std::fs::read(&args[2])?;
+            let content: &[u8] = &std::fs::read(file)?;
             read_info(content, &mut info_hash, &mut torrent, true)
         }
-        "peers" => {
+        Commands::Peers {
+            file,
+        } => {
             // Read the file
-            let content: &[u8] = &std::fs::read(&args[2])?;
+            let content: &[u8] = &std::fs::read(file)?;
             read_info(content, &mut info_hash, &mut torrent, true)?;
             make_peer_request(&info_hash, &torrent, peer_id).await.context("Error making peer request")?;
             Ok(())
-
         }
-        "handshake" => {
+        Commands::Handshake {
+            file,
+            socket_addr,
+        } => {
             // Read the file
-            let content: &[u8] = &std::fs::read(&args[2])?;
-            let socket_addr = args[3].parse::<SocketAddr>().context("Error parsing socket address")?;
+            let content: &[u8] = &std::fs::read(file)?;
+            let socket_addr = socket_addr.parse::<SocketAddr>().context("Error parsing socket address")?;
             read_info(content, &mut info_hash, &mut torrent, false)?;
             make_handshake(&info_hash, &socket_addr).context("Error making handshake")?;
             Ok(())
 
         }
-        "download_piece" => {
-            // Once the handshake is complete, we send a bitfield message
+        Commands::DownloadPiece {
+            output: _output,
+            file,
+            piece_index: _piece_index,
+        } => {
             // Read the file
-            let content: &[u8] = &std::fs::read(&args[2])?;
-            let socket_addr = args[3].parse::<SocketAddr>().context("Error parsing socket address")?;
+            let content: &[u8] = &std::fs::read(file)?;
             read_info(content, &mut info_hash, &mut torrent, false)?;
+            let socket_addr = torrent.announce.parse::<SocketAddr>().context("Error parsing socket address")?;
             let stream: TcpStream = make_handshake(&info_hash, &socket_addr).context("Error making handshake")?;
             let mut reader = BufReader::new(&stream);
 
@@ -95,22 +129,20 @@ async fn main() -> Result<()> {
                     anyhow::bail!("Error: Expected bitfield message");
                 }
             }
+            Ok(())
 
             // Wait to receive an unchocke message back
-            todo!("Wait to receive unchoke message");
-
-            todo!("Break the piece into blocks of 16kiB");
-
-            todo!("Wait for a piece message for each block requested");
-
-            todo!("Check the integrity of each piece block");
-
-            Ok(())
+            // todo!("Wait to receive unchoke message");
+            //
+            // todo!("Break the piece into blocks of 16kiB");
+            //
+            // todo!("Wait for a piece message for each block requested");
+            //
+            // todo!("Check the integrity of each piece block");
+            //
+            // Ok(())
         }
-        _ => {
-            println!("unknown command: {}", args[1]);
-            Err(std::io::Error::new(std::io::ErrorKind::Other, "unknown command").into())
-        }
+
     }
 }
 
