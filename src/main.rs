@@ -5,6 +5,7 @@ use crate::value::BencodeValue;
 use crate::torrent::Torrent;
 use std::io::{BufRead, BufReader, Write};
 use std::path::PathBuf;
+use bincode::Options;
 use peers::Handshake;
 use tracker::{TrackerResponseSuccess, TrackerRequest};
 use crate::peers::addr::Address;
@@ -121,16 +122,12 @@ async fn main() -> Result<()> {
 
             // Read the current data from the stream
             let received_bitfield: Vec<u8> = reader.fill_buf().expect("Error reading from stream for bitfield message").to_vec();
-            let bitfield_message: peers::PeerMessageType = bincode::deserialize(&received_bitfield).expect("Error deserializing bitfield message");
-            match bitfield_message {
-                peers::PeerMessageType::Bitfield => {
-                    println!("Bitfield: {:?}", bitfield_message);
-                }
-                _ => {
-                    println!("Error: Expected bitfield message");
-                    anyhow::bail!("Error: Expected bitfield message");
-                }
-            }
+            let received_bitfield_length = received_bitfield.len();
+            println!("Received bitfield length: {}", received_bitfield_length);
+            let options = bincode::DefaultOptions::new().with_big_endian();
+            let bitfield_message: peers::PeerMessage = options.deserialize(&received_bitfield).expect("Error deserializing bitfield message");
+            println!("Bitfield message in bytes: {:?}", received_bitfield);
+            println!("Bitfield message: {:?}", bitfield_message);
             Ok(())
 
             // Wait to receive an unchocke message back
@@ -154,6 +151,9 @@ fn make_handshake(info_hash: &[u8;20], socket_addr: &[SocketAddr]) -> Result<Tcp
     if let Ok(mut stream) = TcpStream::connect(socket_addr) {
 
         let handshake = Handshake::new(*info_hash, *b"00112233445566778899");
+
+        let handshake_bytes_size = std::mem::size_of::<Handshake>();
+        println!("Handshake size: {}", handshake_bytes_size);
         let serialized_bytes = bincode::serialize(&handshake).expect("Serialization failed for handshake");
         //println!("Serialized: {:?}", serialized_bytes);
         stream.write_all(&serialized_bytes).expect("Error writing to stream");
@@ -162,8 +162,11 @@ fn make_handshake(info_hash: &[u8;20], socket_addr: &[SocketAddr]) -> Result<Tcp
         let mut reader = BufReader::new(&stream);
         // Read the current data from the stream
         let received: Vec<u8> = reader.fill_buf().expect("Error reading from stream").to_vec();
+        println!("Received length: {}", received.len());
         let handshake_response: Handshake = bincode::deserialize(&received).expect("Error deserializing handshake");
         println!("Peer ID: {}", handshake_response.peer_id.iter().map(|b| format!("{:02x}", b)).collect::<String>());
+        assert_eq!(handshake_response.p_str , *b"BitTorrent protocol");
+        assert_eq!(handshake_response.length, 19);
 
         // Consume the buffer
         reader.consume(received.len());
