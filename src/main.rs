@@ -1,4 +1,4 @@
-use std::net::{SocketAddrV4, TcpStream};
+use std::net::{SocketAddr, TcpStream};
 use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
 use crate::value::BencodeValue;
@@ -100,9 +100,10 @@ async fn main() -> Result<()> {
         } => {
             // Read the file
             let content: &[u8] = &std::fs::read(file)?;
-            let socket_addr = socket_addr.parse::<SocketAddrV4>().context("Error parsing socket address")?;
+            let socket_addr = socket_addr.parse::<SocketAddr>().context("Error parsing socket address")?;
+            let peer_list = vec![socket_addr];
             read_info(content, &mut info_hash, &mut torrent, false)?;
-            make_handshake(&info_hash, &socket_addr).context("Error making handshake")?;
+            make_handshake(&info_hash, &peer_list).context("Error making handshake")?;
             Ok(())
 
         }
@@ -115,7 +116,7 @@ async fn main() -> Result<()> {
             let content: &[u8] = &std::fs::read(file)?;
             read_info(content, &mut info_hash, &mut torrent, false)?;
             let peers =  make_peer_request(&info_hash, &torrent, peer_id).await.context("Error making peer request")?;
-            let stream: TcpStream = make_handshake(&info_hash, &peers[0]).context("Error making handshake")?;
+            let stream: TcpStream = make_handshake(&info_hash, &peers[..]).context("Error making handshake")?;
             let mut reader = BufReader::new(&stream);
 
             // Read the current data from the stream
@@ -147,7 +148,7 @@ async fn main() -> Result<()> {
     }
 }
 
-fn make_handshake(info_hash: &[u8;20], socket_addr: &SocketAddrV4) -> Result<TcpStream> {
+fn make_handshake(info_hash: &[u8;20], socket_addr: &[SocketAddr]) -> Result<TcpStream> {
 
     // Make a TCP connection to the socket address and wait for handshake response
     if let Ok(mut stream) = TcpStream::connect(socket_addr) {
@@ -230,7 +231,7 @@ fn read_info(content: &[u8], info_hash: &mut [u8; 20], torrent: &mut Torrent, pr
     }
 }
 
-async fn make_peer_request(info_hash: &[u8; 20], torrent: &Torrent, peer_id: String) -> Result<Vec<SocketAddrV4>> {
+async fn make_peer_request(info_hash: &[u8; 20], torrent: &Torrent, peer_id: String) -> Result<Vec<SocketAddr>> {
     let d = TrackerRequest::default();
     const PORT: u16 = 6881;
 

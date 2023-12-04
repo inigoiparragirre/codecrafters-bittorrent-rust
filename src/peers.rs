@@ -45,12 +45,12 @@ impl Handshake {
 
 pub mod addr {
     use std::fmt;
-    use std::net::{Ipv4Addr, SocketAddrV4};
+    use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
     use serde::{Deserialize, Deserializer};
     use serde::de::Visitor;
 
     #[derive(Debug, Clone)]
-    pub struct Address(pub Vec<SocketAddrV4>);
+    pub struct Address(pub Vec<SocketAddr>);
 
     impl<'de> Deserialize<'de> for Address {
         fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
@@ -81,10 +81,10 @@ pub mod addr {
             Ok(Address(
                 v.chunks_exact(6)
                     .map(|slice_6| {
-                        SocketAddrV4::new(
+                        SocketAddr::V4(SocketAddrV4::new(
                             Ipv4Addr::new(slice_6[0], slice_6[1], slice_6[2], slice_6[3]),
                             u16::from_be_bytes([slice_6[4], slice_6[5]]),
-                        )
+                        ))
                     })
                     .collect(),
             ))
