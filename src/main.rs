@@ -5,7 +5,7 @@ use crate::value::BencodeValue;
 use crate::torrent::Torrent;
 use std::io::{BufRead, BufReader, Write};
 use std::path::PathBuf;
-use bincode::Options;
+use bincode::{Options};
 use peers::Handshake;
 use tracker::{TrackerResponseSuccess, TrackerRequest};
 use crate::peers::addr::Address;
@@ -18,6 +18,7 @@ mod error;
 mod encode;
 mod peers;
 mod tracker;
+mod frame;
 
 
 #[derive(Parser)]
