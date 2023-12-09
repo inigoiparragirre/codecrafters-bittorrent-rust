@@ -5,7 +5,7 @@ use crate::peers::PeerMessage;
 
 const MAX: usize = 8 * 1024 * 1024;
 
-struct MessageDecoder {}
+pub struct MessageDecoder {}
 
 
 impl Encoder<String> for MessageDecoder {

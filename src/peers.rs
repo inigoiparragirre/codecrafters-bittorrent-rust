@@ -14,7 +14,7 @@ pub enum PeerMessageType {
     Cancel = 8,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug)]
 #[repr(C)]
 pub struct PeerMessage {
     pub length: u32,

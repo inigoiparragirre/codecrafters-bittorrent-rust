@@ -1,11 +1,14 @@
-use std::net::{SocketAddr, TcpStream};
+use tokio::net::TcpStream;
+use std::net::SocketAddr;
 use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
 use crate::value::BencodeValue;
 use crate::torrent::Torrent;
-use std::io::{BufRead, BufReader, Write};
+
+
 use std::path::PathBuf;
-use bincode::{Options};
+use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
+use tokio_util::codec::Framed;
 use peers::Handshake;
 use tracker::{TrackerResponseSuccess, TrackerRequest};
 use crate::peers::addr::Address;
@@ -50,7 +53,7 @@ enum Commands {
         file: PathBuf,
         piece_index: usize,
 
-    }
+    },
 }
 
 // Usage: your_bittorrent.sh decode "<encoded_value>"
@@ -66,7 +69,7 @@ async fn main() -> Result<()> {
 
 
     match &cli.command {
-        Commands::Decode { encoded_value} => {
+        Commands::Decode { encoded_value } => {
             let encoded_bytes = encoded_value.as_bytes();
             let mut parser = decode::Parser::new(&encoded_bytes);
             match parser.parse() {
@@ -103,11 +106,10 @@ async fn main() -> Result<()> {
             // Read the file
             let content: &[u8] = &std::fs::read(file)?;
             let socket_addr = socket_addr.parse::<SocketAddr>().context("Error parsing socket address")?;
-            let peer_list = vec![socket_addr];
             read_info(content, &mut info_hash, &mut torrent, false)?;
-            make_handshake(&info_hash, &peer_list).context("Error making handshake")?;
+            let mut stream = TcpStream::connect(socket_addr).await?;
+            make_handshake(&mut stream , &info_hash).await.context("Error making handshake")?;
             Ok(())
-
         }
         Commands::DownloadPiece {
             output: _output,
@@ -116,19 +118,21 @@ async fn main() -> Result<()> {
         } => {
             // Read the file
             let content: &[u8] = &std::fs::read(file)?;
-            read_info(content, &mut info_hash, &mut torrent, false)?;
-            let peers =  make_peer_request(&info_hash, &torrent, peer_id).await.context("Error making peer request")?;
-            let stream: TcpStream = make_handshake(&info_hash, &peers[..]).context("Error making handshake")?;
-            let mut reader = BufReader::new(&stream);
+            let message_decoder = frame::MessageDecoder {};
 
+            read_info(content, &mut info_hash, &mut torrent, false)?;
+            let peers = make_peer_request(&info_hash, &torrent, peer_id).await.context("Error making peer request")?;
+            let mut stream = TcpStream::connect(&peers[..]).await?;
+            make_handshake(&mut stream, &info_hash).await.context("Error making handshake")?;
+
+            let framed = Framed::new(stream, message_decoder);
             // Read the current data from the stream
-            let received_bitfield: Vec<u8> = reader.fill_buf().expect("Error reading from stream for bitfield message").to_vec();
-            let received_bitfield_length = received_bitfield.len();
-            println!("Received bitfield length: {}", received_bitfield_length);
-            let options = bincode::DefaultOptions::new().with_big_endian();
-            let bitfield_message: peers::PeerMessage = options.deserialize(&received_bitfield).expect("Error deserializing bitfield message");
-            println!("Bitfield message in bytes: {:?}", received_bitfield);
-            println!("Bitfield message: {:?}", bitfield_message);
+            // let received_bitfield: Vec<u8> = reader.fill_buf().expect("Error reading from stream for bitfield message").to_vec();
+            // let received_bitfield_length = received_bitfield.len();
+            // println!("Received bitfield length: {}", received_bitfield_length);
+            // let bitfield_message: peers::PeerMessage
+            // println!("Bitfield message in bytes: {:?}", received_bitfield);
+            // println!("Bitfield message: {:?}", bitfield_message);
             Ok(())
 
             // Wait to receive an unchocke message back
@@ -142,41 +146,30 @@ async fn main() -> Result<()> {
             //
             // Ok(())
         }
-
     }
 }
 
-fn make_handshake(info_hash: &[u8;20], socket_addr: &[SocketAddr]) -> Result<TcpStream> {
+async fn make_handshake(stream: &mut TcpStream, info_hash: &[u8; 20]) -> Result<()> {
+    let handshake = Handshake::new(*info_hash, *b"00112233445566778899");
 
-    // Make a TCP connection to the socket address and wait for handshake response
-    if let Ok(mut stream) = TcpStream::connect(socket_addr) {
+    let handshake_bytes_size = std::mem::size_of::<Handshake>();
+    println!("Handshake size: {}", handshake_bytes_size);
+    let serialized_bytes = bincode::serialize(&handshake).expect("Serialization failed for handshake");
+    //println!("Serialized: {:?}", serialized_bytes);
+    stream.write_all(&serialized_bytes).await.expect("Error writing to stream");
 
-        let handshake = Handshake::new(*info_hash, *b"00112233445566778899");
 
-        let handshake_bytes_size = std::mem::size_of::<Handshake>();
-        println!("Handshake size: {}", handshake_bytes_size);
-        let serialized_bytes = bincode::serialize(&handshake).expect("Serialization failed for handshake");
-        //println!("Serialized: {:?}", serialized_bytes);
-        stream.write_all(&serialized_bytes).expect("Error writing to stream");
-
-        // Wrap the stream in a BufReader
-        let mut reader = BufReader::new(&stream);
-        // Read the current data from the stream
-        let received: Vec<u8> = reader.fill_buf().expect("Error reading from stream").to_vec();
-        println!("Received length: {}", received.len());
-        let handshake_response: Handshake = bincode::deserialize(&received).expect("Error deserializing handshake");
-        println!("Peer ID: {}", handshake_response.peer_id.iter().map(|b| format!("{:02x}", b)).collect::<String>());
-        assert_eq!(handshake_response.p_str , *b"BitTorrent protocol");
-        assert_eq!(handshake_response.length, 19);
-
-        // Consume the buffer
-        reader.consume(received.len());
-        Ok(stream)
-    }
-    else {
-        println!("Error connecting to socket address");
-        anyhow::bail!("Error connecting to socket address");
-    }
+    // Read the current data from the stream
+    let mut reader = BufReader::new(stream);
+    let received: Vec<u8> = reader.fill_buf().await.expect("Error reading from stream").to_vec();
+    println!("Received length: {}", received.len());
+    let handshake_response: Handshake = bincode::deserialize(&received).expect("Error deserializing handshake");
+    println!("Peer ID: {}", handshake_response.peer_id.iter().map(|b| format!("{:02x}", b)).collect::<String>());
+    assert_eq!(handshake_response.p_str, *b"BitTorrent protocol");
+    assert_eq!(handshake_response.length, 19);
+    // Consume the buffer
+    reader.consume(received.len());
+    Ok(())
 }
 
 fn read_info(content: &[u8], info_hash: &mut [u8; 20], torrent: &mut Torrent, print: bool) -> Result<()> {
@@ -188,38 +181,38 @@ fn read_info(content: &[u8], info_hash: &mut [u8; 20], torrent: &mut Torrent, pr
                     let url_string = format!("{}", url);
                     let output = url_string.trim_matches('"'); // Remove quotes
                     torrent.announce = output.to_string();
-                    if print {println!("Tracker URL: {}", output);}
+                    if print { println!("Tracker URL: {}", output); }
                 }
 
                 if let Some(info) = map.get("info".as_bytes()) {
                     if let BencodeValue::BDictionary(map) = info {
                         if let Some(length) = map.get("length".as_bytes()) {
-                            if print {println!("Length: {}", length);}
+                            if print { println!("Length: {}", length); }
                             torrent.info.length = length.to_string().parse::<i64>().unwrap();
                         }
 
                         if let Some(length) = map.get("piece length".as_bytes()) {
-                            if print {println!("Piece Length: {}", length);}
+                            if print { println!("Piece Length: {}", length); }
                             torrent.info.piece_length = length.to_string().parse::<i64>().unwrap();
                         }
 
                         let mut encoder = encode::Encoder::new();
                         encoder.encode(info)?;
                         let hash = encoder.encode_sha1(info_hash);
-                        if print {println!("Info Hash: {}", hash);}
+                        if print { println!("Info Hash: {}", hash); }
 
 
                         if let Some(pieces_string) = map.get("pieces".as_bytes()) {
                             // Get the bytes string and represent as hexadecimal
                             // Represent hexadecimal hash of each piece
                             if let BencodeValue::BString(pieces_string) = pieces_string {
-                                if print {println!("Piece Hashes:");}
+                                if print { println!("Piece Hashes:"); }
                                 let mut remaining_hash_data = &pieces_string[..];
                                 while !remaining_hash_data.is_empty() {
                                     let (hash, rest) = remaining_hash_data.split_at(20);
                                     remaining_hash_data = rest;
                                     let hash_in_hex = hex::encode(hash);
-                                    if print {println!("{}", hash_in_hex);}
+                                    if print { println!("{}", hash_in_hex); }
                                 }
                             }
                         }
