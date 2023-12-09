@@ -1,10 +1,41 @@
+use bytes::{Buf, BytesMut};
+use tokio::io;
+use tokio_util::codec::{Decoder, Encoder};
+use crate::peers::PeerMessage;
+
+const MAX: usize = 8 * 1024 * 1024;
+
+struct MessageDecoder {}
 
 
+impl Encoder<String> for MessageDecoder {
+    type Error = std::io::Error;
 
-struct Frame {};
+    fn encode(&mut self, item: String, dst: &mut BytesMut) -> Result<(), Self::Error> {
+        // Don't send a string if it is longer than the other end will
+        // accept.
+        if item.len() > MAX {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::InvalidData,
+                format!("Frame of length {} is too large.", item.len())
+            ));
+        }
 
+        // Convert the length into a byte array.
+        // The cast to u32 cannot overflow due to the length check above.
+        let len_slice = u32::to_le_bytes(item.len() as u32);
 
-impl Decoder for Frame {
+        // Reserve space in the buffer.
+        dst.reserve(4 + item.len());
+
+        // Write the length and string to the buffer.
+        dst.extend_from_slice(&len_slice);
+        dst.extend_from_slice(item.as_bytes());
+        Ok(())
+    }
+}
+
+impl Decoder for MessageDecoder {
     type Item = PeerMessage;
     type Error = io::Error;
 
@@ -13,9 +44,20 @@ impl Decoder for Frame {
             return Ok(None);
         }
 
-        let length = BigEndian::read_u32(&src[0..4]) as usize;
+        // Read length marker.
+        let mut length_bytes = [0u8; 4];
+        length_bytes.copy_from_slice(&src[..4]);
+        let length = u32::from_be_bytes(length_bytes) as usize;
 
-        if src.len() < length + 4 {
+        if src.len() < 4 + length {
+            // The full string has not yet arrived.
+            //
+            // We reserve more space in the buffer. This is not strictly
+            // necessary, but is a good idea performance-wise.
+            src.reserve(4 + length - src.len());
+
+            // We inform the Framed that we need more bytes to form the next
+            // frame.
             return Ok(None);
         }
 

@@ -14,12 +14,12 @@ pub enum PeerMessageType {
     Cancel = 8,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize)]
 #[repr(C)]
 pub struct PeerMessage {
     pub length: u32,
     pub id: u8,
-    pub payload: [u8; 2]
+    pub payload: Vec<u8>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
