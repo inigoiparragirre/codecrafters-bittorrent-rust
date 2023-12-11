@@ -13,7 +13,7 @@ use peers::Handshake;
 use tracker::{TrackerResponseSuccess, TrackerRequest};
 use crate::frame::MessageDecoder;
 use crate::peers::addr::Address;
-use futures::stream::StreamExt;
+use futures_util::{StreamExt, SinkExt};
 use crate::peers::PeerMessageType;
 
 
@@ -137,6 +137,14 @@ async fn main() -> Result<()> {
                             println!("Bitfield message received");
                             // Read the current data from the stream
                             println!("Payload: {:?}", message.payload);
+
+                            // send a frame "interested"
+                            let interested_message = PeerMessage {
+                                length: 1,
+                                id: PeerMessageType::Interested,
+                                payload: vec![],
+                            };
+                            framed.send(interested_message).await.expect("Error sending interested message");
                         } else {
                             println!("Message received: {:?}", message);
                         }
