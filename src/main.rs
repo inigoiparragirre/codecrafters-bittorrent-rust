@@ -130,40 +130,12 @@ async fn main() -> Result<()> {
 
             let mut framed = Framed::new(stream, MessageDecoder);
 
-            if let Some(message_result) = framed.next().await {
-                match message_result {
-                    Ok(message) => {
-                        if message.id == PeerMessageType::Bitfield {
-                            println!("Bitfield message received");
-                            // Read the current data from the stream
-                            println!("Payload: {:?}", message.payload);
+            let message_bitfield =  framed.next().await.expect("Expect a bitfield message").context("Error reading bitfield message")?;
 
-                            // send a frame "interested"
-                            let interested_message = PeerMessage {
-                                length: 1,
-                                id: PeerMessageType::Interested,
-                                payload: vec![],
-                            };
-                            framed.send(interested_message).await.expect("Error sending interested message");
-                        } else {
-                            println!("Message received: {:?}", message);
-                        }
-                        println!("Message received: {:?}", message);
-                    }
-                    Err(err) => {
-                        println!("Error receiving message: {}", err);
-                    }
-                }
-            }
+            let unchoke = framed.next().await.expect("Expect a unchoke").context("Error reading unchoke")?;
 
 
-            // Read the current data from the stream
-            // let received_bitfield: Vec<u8> = reader.fill_buf().expect("Error reading from stream for bitfield message").to_vec();
-            // let received_bitfield_length = received_bitfield.len();
-            // println!("Received bitfield length: {}", received_bitfield_length);
-            // let bitfield_message: peers::PeerMessage
-            // println!("Bitfield message in bytes: {:?}", received_bitfield);
-            // println!("Bitfield message: {:?}", bitfield_message);
+
             Ok(())
 
             // Wait to receive an unchocke message back
