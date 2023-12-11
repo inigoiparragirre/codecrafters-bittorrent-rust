@@ -1,36 +1,37 @@
-use bytes::{Buf, BytesMut};
+use bytes::{Buf, BufMut, BytesMut};
 use tokio::io;
 use tokio_util::codec::{Decoder, Encoder};
 use crate::peers::{PeerMessage, PeerMessageType};
 
-const MAX: usize = 8 * 1024 * 1024;
+const MAX: u32 = 8 * 1024 * 1024;
 
 pub struct MessageDecoder;
 
 
-impl Encoder<String> for MessageDecoder {
+impl Encoder<PeerMessage> for MessageDecoder {
     type Error = std::io::Error;
 
-    fn encode(&mut self, item: String, dst: &mut BytesMut) -> Result<(), Self::Error> {
+    fn encode(&mut self, item: PeerMessage, dst: &mut BytesMut) -> Result<(), Self::Error> {
         // Don't send a string if it is longer than the other end will
         // accept.
-        if item.len() > MAX {
+        if item.payload.len() + 1> MAX as usize {
             return Err(std::io::Error::new(
                 std::io::ErrorKind::InvalidData,
-                format!("Frame of length {} is too large.", item.len())
+                format!("Frame of length {} is too large.", item.payload.len())
             ));
         }
 
         // Convert the length into a byte array.
         // The cast to u32 cannot overflow due to the length check above.
-        let len_slice = u32::to_be_bytes(item.len() as u32);
+        let len_slice = u32::to_be_bytes(item.payload.len() as u32 + 1);
 
         // Reserve space in the buffer.
-        dst.reserve(4 + item.len());
+        dst.reserve(4 + item.length as usize);
 
         // Write the length and string to the buffer.
         dst.extend_from_slice(&len_slice);
-        dst.extend_from_slice(item.as_bytes());
+        dst.put_u8(item.id as u8);
+        dst.extend_from_slice(&item.payload);
         Ok(())
     }
 }

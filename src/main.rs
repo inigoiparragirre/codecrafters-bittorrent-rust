@@ -14,7 +14,7 @@ use tracker::{TrackerResponseSuccess, TrackerRequest};
 use crate::frame::MessageDecoder;
 use crate::peers::addr::Address;
 use futures_util::{StreamExt, SinkExt};
-use crate::peers::PeerMessageType;
+use crate::peers::{PeerMessage, PeerMessageType};
 
 
 mod decode;
