@@ -1,7 +1,7 @@
 use serde_derive::{Deserialize, Serialize};
 
 #[repr(u8)]
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
 pub enum PeerMessageType {
     Choke = 0,
     Unchoke = 1,
@@ -18,7 +18,7 @@ pub enum PeerMessageType {
 #[repr(C)]
 pub struct PeerMessage {
     pub length: u32,
-    pub id: u8,
+    pub id: PeerMessageType,
     pub payload: Vec<u8>,
 }
 

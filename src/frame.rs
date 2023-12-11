@@ -5,7 +5,7 @@ use crate::peers::PeerMessage;
 
 const MAX: usize = 8 * 1024 * 1024;
 
-pub struct MessageDecoder {}
+pub struct MessageDecoder;
 
 
 impl Encoder<String> for MessageDecoder {
@@ -23,7 +23,7 @@ impl Encoder<String> for MessageDecoder {
 
         // Convert the length into a byte array.
         // The cast to u32 cannot overflow due to the length check above.
-        let len_slice = u32::to_le_bytes(item.len() as u32);
+        let len_slice = u32::to_be_bytes(item.len() as u32);
 
         // Reserve space in the buffer.
         dst.reserve(4 + item.len());
@@ -62,6 +62,19 @@ impl Decoder for MessageDecoder {
         }
 
         let id = src[4];
+        match id {
+            0 => println!("choke"),
+            1 => println!("unchoke"),
+            2 => println!("interested"),
+            3 => println!("not interested"),
+            4 => println!("have"),
+            5 => println!("bitfield"),
+            6 => println!("request"),
+            7 => println!("piece"),
+            8 => println!("cancel"),
+            9 => println!("port"),
+            _ => println!("unknown"),
+        }
         let payload = src[5..length + 4].to_vec();
 
         src.advance(length + 4);

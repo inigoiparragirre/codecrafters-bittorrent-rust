@@ -8,10 +8,13 @@ use crate::torrent::Torrent;
 
 use std::path::PathBuf;
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
-use tokio_util::codec::Framed;
+use tokio_util::codec::{Framed};
 use peers::Handshake;
 use tracker::{TrackerResponseSuccess, TrackerRequest};
+use crate::frame::MessageDecoder;
 use crate::peers::addr::Address;
+use futures::stream::StreamExt;
+use crate::peers::PeerMessageType;
 
 
 mod decode;
@@ -108,7 +111,7 @@ async fn main() -> Result<()> {
             let socket_addr = socket_addr.parse::<SocketAddr>().context("Error parsing socket address")?;
             read_info(content, &mut info_hash, &mut torrent, false)?;
             let mut stream = TcpStream::connect(socket_addr).await?;
-            make_handshake(&mut stream , &info_hash).await.context("Error making handshake")?;
+            make_handshake(&mut stream, &info_hash).await.context("Error making handshake")?;
             Ok(())
         }
         Commands::DownloadPiece {
@@ -118,14 +121,46 @@ async fn main() -> Result<()> {
         } => {
             // Read the file
             let content: &[u8] = &std::fs::read(file)?;
-            let message_decoder = frame::MessageDecoder {};
 
             read_info(content, &mut info_hash, &mut torrent, false)?;
             let peers = make_peer_request(&info_hash, &torrent, peer_id).await.context("Error making peer request")?;
             let mut stream = TcpStream::connect(&peers[..]).await?;
             make_handshake(&mut stream, &info_hash).await.context("Error making handshake")?;
 
-            let framed = Framed::new(stream, message_decoder);
+
+            let mut framed = Framed::new(stream, MessageDecoder);
+
+            if let Some(message_result) = framed.next().await {
+                match message_result {
+                    Ok(message) => {
+                        if message.id == PeerMessageType::Bitfield {
+                            println!("Bitfield message received");
+                            // Read the current data from the stream
+                            println!("Payload: {:?}", message.payload);
+                        } else {
+                            println!("Message received: {:?}", message);
+                        }
+                        println!("Message received: {:?}", message);
+                    }
+                    Err(err) => {
+                        println!("Error receiving message: {}", err);
+                    }
+                }
+            }
+
+            // Check if message is of type bitfield
+            match message.id {
+                PeerMessageType::Bitfield => {
+                    println!("Bitfield message received");
+                    // Read the current data from the stream
+                    println!("Payload: {:?}", message.payload);
+                }
+                _ => {
+                    println!("Message received: {:?}", message);
+                }
+            }
+
+
             // Read the current data from the stream
             // let received_bitfield: Vec<u8> = reader.fill_buf().expect("Error reading from stream for bitfield message").to_vec();
             // let received_bitfield_length = received_bitfield.len();
