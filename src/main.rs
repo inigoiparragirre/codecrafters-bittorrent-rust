@@ -148,18 +148,6 @@ async fn main() -> Result<()> {
                 }
             }
 
-            // Check if message is of type bitfield
-            match message.id {
-                PeerMessageType::Bitfield => {
-                    println!("Bitfield message received");
-                    // Read the current data from the stream
-                    println!("Payload: {:?}", message.payload);
-                }
-                _ => {
-                    println!("Message received: {:?}", message);
-                }
-            }
-
 
             // Read the current data from the stream
             // let received_bitfield: Vec<u8> = reader.fill_buf().expect("Error reading from stream for bitfield message").to_vec();

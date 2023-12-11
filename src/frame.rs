@@ -1,7 +1,7 @@
 use bytes::{Buf, BytesMut};
 use tokio::io;
 use tokio_util::codec::{Decoder, Encoder};
-use crate::peers::PeerMessage;
+use crate::peers::{PeerMessage, PeerMessageType};
 
 const MAX: usize = 8 * 1024 * 1024;
 
@@ -62,26 +62,25 @@ impl Decoder for MessageDecoder {
         }
 
         let id = src[4];
-        match id {
-            0 => println!("choke"),
-            1 => println!("unchoke"),
-            2 => println!("interested"),
-            3 => println!("not interested"),
-            4 => println!("have"),
-            5 => println!("bitfield"),
-            6 => println!("request"),
-            7 => println!("piece"),
-            8 => println!("cancel"),
-            9 => println!("port"),
-            _ => println!("unknown"),
-        }
+        let message_type = match id {
+            1 => PeerMessageType::Unchoke,
+            2 => PeerMessageType::Interested,
+            3 => PeerMessageType::NotInterested,
+            4 =>PeerMessageType::Have,
+            5 => PeerMessageType::Bitfield,
+            6 => PeerMessageType::Request,
+            7 => PeerMessageType::Piece,
+            8 => PeerMessageType::Cancel,
+            9 => PeerMessageType::KeepAlive,
+            _ => PeerMessageType::KeepAlive,
+        };
         let payload = src[5..length + 4].to_vec();
 
         src.advance(length + 4);
 
         Ok(Some(PeerMessage {
             length: length as u32,
-            id,
+            id: message_type,
             payload,
         }))
     }

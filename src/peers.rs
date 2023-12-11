@@ -12,6 +12,7 @@ pub enum PeerMessageType {
     Request = 6,
     Piece = 7,
     Cancel = 8,
+    KeepAlive = 9,
 }
 
 #[derive(Debug)]
