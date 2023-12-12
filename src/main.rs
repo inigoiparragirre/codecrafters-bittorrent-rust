@@ -131,8 +131,12 @@ async fn main() -> Result<()> {
             let mut framed = Framed::new(stream, MessageDecoder);
 
             let message_bitfield =  framed.next().await.expect("Expect a bitfield message").context("Error reading bitfield message")?;
+            assert_eq!(message_bitfield.id, PeerMessageType::Bitfield);
 
             let unchoke = framed.next().await.expect("Expect a unchoke").context("Error reading unchoke")?;
+            assert_eq!(unchoke.id, PeerMessageType::Unchoke);
+
+
 
 
 
