@@ -14,6 +14,7 @@ use tracker::{TrackerResponseSuccess, TrackerRequest};
 use crate::frame::MessageDecoder;
 use crate::peers::addr::Address;
 use futures_util::{StreamExt, SinkExt};
+use bytes::{BytesMut, BufMut};
 use crate::peers::{PeerMessage, PeerMessageType};
 
 const BLOCK_SIZE: i64 = 16 * 1024;
@@ -55,7 +56,7 @@ enum Commands {
         #[clap(short, long)]
         output: PathBuf,
         file: PathBuf,
-        piece_index: usize,
+        piece_index: u32,
 
     },
 }
@@ -72,7 +73,7 @@ async fn main() -> Result<()> {
     let peer_id = "00112233445566778899".to_string();
 
 
-    match &cli.command {
+    match cli.command {
         Commands::Decode { encoded_value } => {
             let encoded_bytes = encoded_value.as_bytes();
             let mut parser = decode::Parser::new(&encoded_bytes);
@@ -148,17 +149,6 @@ async fn main() -> Result<()> {
             let piece_length = torrent.info.piece_length;
             println!("Piece length: {}", piece_length);
 
-            // let num_pieces = torrent.info.pieces.len();
-            // let piece_size = if piece_i == num_pieces {
-            //     let md = length % torrent.info.piece_length;
-            //     if md == 0 {
-            //         torrent.info.piece_length
-            //     } else {
-            //         md
-            //     }
-            // } else {
-            //     t.info.plength
-            // };
             let piece_size = torrent.info.piece_length;
 
             let nblocks = (piece_size + (BLOCK_SIZE - 1)) / BLOCK_SIZE;
@@ -166,12 +156,12 @@ async fn main() -> Result<()> {
             for block in 0..nblocks {
                 let offset = block * BLOCK_SIZE;
                 let length = std::cmp::min(BLOCK_SIZE, piece_size - offset);
-                let mut payload = bytes::BytesMut::with_capacity(12);
+                let mut payload = BytesMut::with_capacity(12);
 
                 // Add data to request payload
-                payload.put(&piece_index.to_be_bytes());
-                payload.put(&offset.to_be_bytes());
-                payload.put(&length.to_be_bytes());
+                payload.put(&piece_index.to_be_bytes()[..]);
+                payload.put(&offset.to_be_bytes()[..]);
+                payload.put(&length.to_be_bytes()[..]);
 
                 let request = PeerMessage {
                     id: PeerMessageType::Request,
