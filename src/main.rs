@@ -16,6 +16,7 @@ use crate::peers::addr::Address;
 use futures_util::{StreamExt, SinkExt};
 use crate::peers::{PeerMessage, PeerMessageType};
 
+const BLOCK_SIZE: i64 = 16 * 1024;
 
 mod decode;
 mod value;
@@ -117,7 +118,7 @@ async fn main() -> Result<()> {
         Commands::DownloadPiece {
             output: _output,
             file,
-            piece_index: _piece_index,
+            piece_index,
         } => {
             // Read the file
             let content: &[u8] = &std::fs::read(file)?;
@@ -127,14 +128,59 @@ async fn main() -> Result<()> {
             let mut stream = TcpStream::connect(&peers[..]).await?;
             make_handshake(&mut stream, &info_hash).await.context("Error making handshake")?;
 
-
+            //
             let mut framed = Framed::new(stream, MessageDecoder);
-
             let message_bitfield =  framed.next().await.expect("Expect a bitfield message").context("Error reading bitfield message")?;
             assert_eq!(message_bitfield.id, PeerMessageType::Bitfield);
 
+            // Send an interested message
+            framed.send(PeerMessage {
+                id: PeerMessageType::Interested,
+                length: 1,
+                payload: vec![],
+            }).await.expect("Error sending interested message");
+
             let unchoke = framed.next().await.expect("Expect a unchoke").context("Error reading unchoke")?;
             assert_eq!(unchoke.id, PeerMessageType::Unchoke);
+
+            let length = torrent.info.length;
+            println!("Length: {}", length);
+            let piece_length = torrent.info.piece_length;
+            println!("Piece length: {}", piece_length);
+
+            // let num_pieces = torrent.info.pieces.len();
+            // let piece_size = if piece_i == num_pieces {
+            //     let md = length % torrent.info.piece_length;
+            //     if md == 0 {
+            //         torrent.info.piece_length
+            //     } else {
+            //         md
+            //     }
+            // } else {
+            //     t.info.plength
+            // };
+            let piece_size = torrent.info.piece_length;
+
+            let nblocks = (piece_size + (BLOCK_SIZE - 1)) / BLOCK_SIZE;
+
+            for block in 0..nblocks {
+                let offset = block * BLOCK_SIZE;
+                let length = std::cmp::min(BLOCK_SIZE, piece_size - offset);
+                let mut payload = bytes::BytesMut::with_capacity(12);
+
+                // Add data to request payload
+                payload.put(&piece_index.to_be_bytes());
+                payload.put(&offset.to_be_bytes());
+                payload.put(&length.to_be_bytes());
+
+                let request = PeerMessage {
+                    id: PeerMessageType::Request,
+                    length: 13,
+                    payload: payload.to_vec(),
+                };
+                framed.send(request).await.expect("Error sending request");
+            }
+
 
 
 
