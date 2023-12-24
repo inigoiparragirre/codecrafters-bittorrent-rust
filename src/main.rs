@@ -152,7 +152,7 @@ async fn main() -> Result<()> {
             let piece_size = torrent.info.piece_length;
 
             let nblocks = (piece_size + (BLOCK_SIZE - 1)) / BLOCK_SIZE;
-            println("Number of blocks: {}", nblocks);
+            println!("Number of blocks: {}", nblocks);
             println!("Block size: {}", BLOCK_SIZE);
 
             for block in 0..nblocks {
