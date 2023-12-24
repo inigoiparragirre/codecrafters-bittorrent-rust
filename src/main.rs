@@ -178,6 +178,8 @@ async fn main() -> Result<()> {
                 assert_eq!(piece.id, PeerMessageType::Piece);
                 assert!(!piece.payload.is_empty());
 
+                println!("Piece payload length: {}", piece.payload.len());
+
                 // Split the payload bytes to get the index, offset, and data
                 let (index_bytes, rest) = piece.payload.split_at(4);
                 let (offset_bytes, data) = rest.split_at(4);
