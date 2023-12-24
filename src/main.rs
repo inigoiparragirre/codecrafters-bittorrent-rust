@@ -182,8 +182,8 @@ async fn main() -> Result<()> {
                 let (index_bytes, rest) = piece.payload.split_at(4);
                 let (offset_bytes, data) = rest.split_at(4);
 
-                assert_eq!(index_bytes, piece_index.to_be_bytes());
-                assert_eq!(offset_bytes, offset.to_be_bytes());
+                assert_eq!(u32::from_be_bytes([index_bytes[0], index_bytes[1], index_bytes[2], index_bytes[3]]), piece_index);
+                assert_eq!(u32::from_be_bytes([offset_bytes[0], offset_bytes[1], offset_bytes[2], offset_bytes[3]]), offset as u32);
                 assert_eq!(data.len(), length as usize);
 
 
