@@ -184,6 +184,7 @@ async fn main() -> Result<()> {
                 assert!(!piece.payload.is_empty());
 
                 println!("Piece payload length: {}", piece.payload.len());
+                println!("Piece payload: {:?}", piece.payload);
 
                 // Split the payload bytes to get the index, offset, and data
                 let (index_bytes, rest) = piece.payload.split_at(4);
