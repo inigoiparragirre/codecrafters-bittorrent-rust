@@ -175,7 +175,7 @@ async fn main() -> Result<()> {
                     .await
                     .expect("peer always sends a piece")
                     .context("peer message was invalid")?;
-                assert_eq!(piece.tag, MessageTag::Piece);
+                assert_eq!(piece.id, PeerMessageType::Piece);
                 assert!(!piece.payload.is_empty());
 
                 // Split the payload bytes to get the index, offset, and data
