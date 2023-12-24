@@ -323,7 +323,7 @@ async fn make_peer_request(info_hash: &[u8; 20], torrent: &Torrent, peer_id: Str
     } = serde_bencode::from_bytes(&response_bytes).context("Error decoding serde response")?;
 
     for peer in list_peers.clone() {
-        //println!("{}", peer);
+        println!("{}", peer);
     }
 
     Ok(list_peers)
