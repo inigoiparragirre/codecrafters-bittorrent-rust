@@ -168,7 +168,28 @@ async fn main() -> Result<()> {
                     length: 13,
                     payload: payload.to_vec(),
                 };
-                framed.send(request).await.expect("Error sending request");
+                framed.send(request).await.with_context(|| format!("Error sending request for block {}", block))?;
+
+                let piece = framed
+                    .next()
+                    .await
+                    .expect("peer always sends a piece")
+                    .context("peer message was invalid")?;
+                assert_eq!(piece.tag, MessageTag::Piece);
+                assert!(!piece.payload.is_empty());
+
+                // Split the payload bytes to get the index, offset, and data
+                let (index_bytes, rest) = piece.payload.split_at(4);
+                let (offset_bytes, data) = rest.split_at(4);
+
+                assert_eq!(index_bytes, piece_index.to_be_bytes());
+                assert_eq!(offset_bytes, offset.to_be_bytes());
+                assert_eq!(data.len(), length as usize);
+
+
+
+
+
             }
 
 
