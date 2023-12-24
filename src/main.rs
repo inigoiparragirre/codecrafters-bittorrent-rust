@@ -160,6 +160,9 @@ async fn main() -> Result<()> {
                 let length = std::cmp::min(BLOCK_SIZE, piece_size - offset);
                 let mut payload = BytesMut::with_capacity(12);
 
+                // Print data
+                println!("Request block: {}, Offset: {}, Length: {}", block, offset, length);
+
                 // Add data to request payload
                 payload.put(&piece_index.to_be_bytes()[..]);
                 payload.put(&offset.to_be_bytes()[..]);
