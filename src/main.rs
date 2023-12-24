@@ -200,12 +200,6 @@ async fn main() -> Result<()> {
 
             Ok(())
 
-            // Wait to receive an unchocke message back
-            // todo!("Wait to receive unchoke message");
-            //
-            // todo!("Break the piece into blocks of 16kiB");
-            //
-            // todo!("Wait for a piece message for each block requested");
             //
             // todo!("Check the integrity of each piece block");
             //
