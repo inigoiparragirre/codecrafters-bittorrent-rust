@@ -217,7 +217,7 @@ async fn main() -> Result<()> {
 async fn make_handshake(stream: &mut TcpStream, info_hash: &[u8; 20]) -> Result<()> {
     let handshake = Handshake::new(*info_hash, *b"00112233445566778899");
 
-    let handshake_bytes_size = std::mem::size_of::<Handshake>();
+    //let handshake_bytes_size = std::mem::size_of::<Handshake>();
     //println!("Handshake size: {}", handshake_bytes_size);
     let serialized_bytes = bincode::serialize(&handshake).expect("Serialization failed for handshake");
     //println!("Serialized: {:?}", serialized_bytes);
