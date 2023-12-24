@@ -218,7 +218,7 @@ async fn make_handshake(stream: &mut TcpStream, info_hash: &[u8; 20]) -> Result<
     let handshake = Handshake::new(*info_hash, *b"00112233445566778899");
 
     let handshake_bytes_size = std::mem::size_of::<Handshake>();
-    println!("Handshake size: {}", handshake_bytes_size);
+    //println!("Handshake size: {}", handshake_bytes_size);
     let serialized_bytes = bincode::serialize(&handshake).expect("Serialization failed for handshake");
     //println!("Serialized: {:?}", serialized_bytes);
     stream.write_all(&serialized_bytes).await.expect("Error writing to stream");
@@ -227,7 +227,7 @@ async fn make_handshake(stream: &mut TcpStream, info_hash: &[u8; 20]) -> Result<
     // Read the current data from the stream
     let mut reader = BufReader::new(stream);
     let received: Vec<u8> = reader.fill_buf().await.expect("Error reading from stream").to_vec();
-    println!("Received length: {}", received.len());
+    //println!("Received length: {}", received.len());
     let handshake_response: Handshake = bincode::deserialize(&received).expect("Error deserializing handshake");
     println!("Peer ID: {}", handshake_response.peer_id.iter().map(|b| format!("{:02x}", b)).collect::<String>());
     assert_eq!(handshake_response.p_str, *b"BitTorrent protocol");
