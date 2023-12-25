@@ -17,7 +17,7 @@ use futures_util::{StreamExt, SinkExt};
 use bytes::{BytesMut, BufMut};
 use crate::peers::{PeerMessage, PeerMessageType};
 
-const BLOCK_SIZE: i64 = 16 * 1024;
+const BLOCK_SIZE: u32 = 16 * 1024;
 
 mod decode;
 mod value;
@@ -149,14 +149,14 @@ async fn main() -> Result<()> {
             let piece_length = torrent.info.piece_length;
             println!("Piece length: {}", piece_length);
 
-            let piece_size = torrent.info.piece_length;
+            let piece_size = torrent.info.piece_length as u32;
 
             let nblocks = (piece_size + (BLOCK_SIZE - 1)) / BLOCK_SIZE;
             println!("Number of blocks: {}", nblocks);
             println!("Block size: {}", BLOCK_SIZE);
 
             for block in 0..nblocks {
-                let offset = block * BLOCK_SIZE;
+                let offset = block * BLOCK_SIZE as u32;
                 let length = std::cmp::min(BLOCK_SIZE, piece_size - offset);
                 let mut payload = BytesMut::with_capacity(12);
 
@@ -164,9 +164,9 @@ async fn main() -> Result<()> {
                 println!("Request block: {}, Offset: {}, Length: {}", block, offset, length);
 
                 // Add data to request payload
-                payload.put(&piece_index.to_be_bytes()[..]);
-                payload.put(&offset.to_be_bytes()[..]);
-                payload.put(&length.to_be_bytes()[..]);
+                payload.put_u32(piece_index);
+                payload.put_u32(offset);
+                payload.put_u32(length);
 
                 let request = PeerMessage {
                     id: PeerMessageType::Request,
