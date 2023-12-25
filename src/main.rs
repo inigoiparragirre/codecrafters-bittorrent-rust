@@ -179,7 +179,7 @@ async fn main() -> Result<()> {
                     .next()
                     .await
                     //.expect("peer always sends a piece")
-                    .context("Piece message was invalid")?;
+                    .context("Piece message was invalid")??;
                 assert_eq!(piece.id, PeerMessageType::Piece);
                 assert!(!piece.payload.is_empty());
 
