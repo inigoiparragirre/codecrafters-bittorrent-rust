@@ -201,7 +201,7 @@ async fn main() -> Result<()> {
             Ok(())
 
             //
-            // todo!("Check the integrity of each piece block");
+            // todo!("Merge each downloaded block");
             //
             // Ok(())
         }
