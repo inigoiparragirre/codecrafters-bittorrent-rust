@@ -184,14 +184,18 @@ async fn main() -> Result<()> {
                 assert!(!piece.payload.is_empty());
 
                 println!("Piece payload length: {}", piece.payload.len());
-                println!("Piece payload: {:?}", piece.payload);
+                // println!("Piece payload: {:?}", piece.payload);
 
                 // Split the payload bytes to get the index, offset, and data
                 let (index_bytes, rest) = piece.payload.split_at(4);
                 let (offset_bytes, _data) = rest.split_at(4);
 
-                assert_eq!(u32::from_be_bytes([index_bytes[0], index_bytes[1], index_bytes[2], index_bytes[3]]), piece_index);
-                assert_eq!(u32::from_be_bytes([offset_bytes[0], offset_bytes[1], offset_bytes[2], offset_bytes[3]]), offset as u32);
+                let received_index = u32::from_be_bytes([index_bytes[0], index_bytes[1], index_bytes[2], index_bytes[3]]);
+                let received_offset = u32::from_be_bytes([offset_bytes[0], offset_bytes[1], offset_bytes[2], offset_bytes[3]]);
+                println!("Received index: {}, offset: {}", received_index, received_offset);
+
+                assert_eq!(received_index, piece_index);
+                assert_eq!(received_offset, offset);
                 //assert_eq!(data.len(), length as usize);
 
 
