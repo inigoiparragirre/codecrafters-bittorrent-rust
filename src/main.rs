@@ -150,6 +150,7 @@ async fn main() -> Result<()> {
             println!("Piece length: {}", piece_length);
 
             let piece_size = torrent.info.piece_length as u32;
+            let mut all_blocks: Vec<u8> = Vec::with_capacity(piece_size as usize);
 
             let nblocks = (piece_size + (BLOCK_SIZE - 1)) / BLOCK_SIZE;
             println!("Number of blocks: {}", nblocks);
@@ -197,7 +198,8 @@ async fn main() -> Result<()> {
 
                 assert_eq!(received_index, piece_index);
                 assert_eq!(received_offset, offset);
-                //assert_eq!(data.len(), length as usize);
+                assert_eq!(data.len(), length as usize);
+                all_blocks.extend_from_slice(data);
 
 
             }
