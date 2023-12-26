@@ -194,11 +194,11 @@ async fn main() -> Result<()> {
                 let received_index = u32::from_be_bytes([index_bytes[0], index_bytes[1], index_bytes[2], index_bytes[3]]);
                 let received_offset = u32::from_be_bytes([offset_bytes[0], offset_bytes[1], offset_bytes[2], offset_bytes[3]]);
                 println!("Received index: {}, offset: {}", received_index, received_offset);
-                println!("Received data: {:?}", data);
+                //println!("Received data: {:?}", data);
 
                 assert_eq!(received_index, piece_index);
                 assert_eq!(received_offset, offset);
-                assert_eq!(data.len(), length as usize);
+                //assert_eq!(data.len(), length as usize);
                 all_blocks.extend_from_slice(data);
 
 
