@@ -198,19 +198,13 @@ async fn main() -> Result<()> {
 
                 assert_eq!(received_index, piece_index);
                 assert_eq!(received_offset, offset);
-                //assert_eq!(data.len(), length as usize);
+                assert_eq!(data.len(), length as usize);
                 all_blocks.extend_from_slice(data);
-
 
             }
 
-
             Ok(())
-
-            //
             // todo!("Merge each downloaded block");
-            //
-            // Ok(())
         }
     }
 }
